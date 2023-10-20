@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+import os
 
 treatments = {
     # Compounds
@@ -50,10 +51,10 @@ treatments = {
     'O03': 'Stimulator Control'
 }
 
-image_data = pd.read_csv(
-    'E:/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/Outputs/Image.csv')
-nuc_data = pd.read_csv(
-    'E:/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/Outputs/Nuclei.csv')
+input_dir = 'C:/Users/davej/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/Outputs/'
+
+image_data = pd.read_csv(os.path.join(input_dir, 'Image.csv'))
+nuc_data = pd.read_csv(os.path.join(input_dir, 'Nuclei.csv'))
 
 combined_data = pd.merge(nuc_data, image_data, on='ImageNumber', how='left')
 
@@ -73,12 +74,11 @@ plt.figure(figsize=(20, 12))
 # Swarmplot to show individual data points
 sns.swarmplot(x='Well', y='Intensity_MeanIntensity_Fascin', data=combined_data, order=well_order, palette="pastel",
               hue='Treatment',
-              size=0.8,
+              size=0.5,
               log_scale=10)
 
 sns.boxplot(x='Well', y='Intensity_MeanIntensity_Fascin', data=combined_data, order=well_order, color='white',
-            log_scale=10,
-            showfliers=False)
+            log_scale=10, showfliers=False, showmeans=True,
+            meanprops={"marker": "o", "markerfacecolor": "white", "markeredgecolor": "black"})
 
-plt.title('Stripplot of Intensity_MeanIntensity_Fascin grouped by Well (Log Scale)')
-plt.show()
+plt.savefig("output_filename.pdf", format='pdf', bbox_inches='tight')
