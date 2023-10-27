@@ -73,17 +73,17 @@ plt.figure(figsize=(20, 12))
 # sns.boxplot(x='Well', y='Intensity_MeanIntensity_Fascin', data=combined_data, color='black', log_scale=10)
 
 # Swarmplot to show individual data points
-sns.swarmplot(x='Well', y='Intensity_MeanIntensity_Fascin', data=combined_data, order=well_order, palette="pastel",
+sns.swarmplot(x='Well', y='Intensity_IntegratedIntensity_NuclearActin', data=combined_data, order=well_order, palette="pastel",
               hue='Treatment',
               size=0.5,
               log_scale=10)
 
-sns.boxplot(x='Well', y='Intensity_MeanIntensity_Fascin', data=combined_data, order=well_order, color='white',
+sns.boxplot(x='Well', y='Intensity_IntegratedIntensity_NuclearActin', data=combined_data, order=well_order, color='white',
             log_scale=10, showfliers=False, showmeans=True,
             meanprops={"marker": "o", "markerfacecolor": "white", "markeredgecolor": "black"})
 
 # plt.title('Stripplot of Intensity_MeanIntensity_Fascin grouped by Well (Log Scale)')
-plt.savefig("agg_output_filename.pdf", format='pdf', bbox_inches='tight')
+plt.savefig("output_filename.pdf", format='pdf', bbox_inches='tight')
 
 columns_to_keep = ['Well'] + combined_data.select_dtypes(include=np.number).columns.tolist()
 df_numeric = combined_data[columns_to_keep]
@@ -104,4 +104,4 @@ sns.boxplot(x='Treatment', y='Intensity_IntegratedIntensity_NuclearActin', data=
             showfliers=False)
 
 # plt.title('Stripplot of Intensity_MeanIntensity_Fascin grouped by Well (Log Scale)')
-plt.savefig("output_filename.pdf", format='pdf', bbox_inches='tight')
+plt.savefig("agg_output_filename.pdf", format='pdf', bbox_inches='tight')
