@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
 
@@ -80,5 +81,26 @@ sns.boxplot(x='Well', y='Intensity_MeanIntensity_Fascin', data=combined_data, or
             log_scale=10,
             showfliers=False)
 
-plt.title('Stripplot of Intensity_MeanIntensity_Fascin grouped by Well (Log Scale)')
+# plt.title('Stripplot of Intensity_MeanIntensity_Fascin grouped by Well (Log Scale)')
+plt.show()
+
+columns_to_keep = ['Well'] + combined_data.select_dtypes(include=np.number).columns.tolist()
+df_numeric = combined_data[columns_to_keep]
+
+# 2. Aggregate the intensity measurements at the well level (using mean as an example)
+df_well_level = df_numeric.groupby('Well').median().reset_index()
+df_well_level['Treatment'] = df_well_level['Well'].map(treatments)
+
+plt.figure(figsize=(20, 12))
+# Boxplot to show distribution
+# sns.boxplot(x='Well', y='Intensity_MeanIntensity_Fascin', data=combined_data, color='black', log_scale=10)
+
+# Swarmplot to show individual data points
+sns.swarmplot(x='Treatment', y='Intensity_IntegratedIntensity_NuclearActin', data=df_well_level,
+              size=3)
+
+sns.boxplot(x='Treatment', y='Intensity_IntegratedIntensity_NuclearActin', data=df_well_level, color='white',
+            showfliers=False)
+
+# plt.title('Stripplot of Intensity_MeanIntensity_Fascin grouped by Well (Log Scale)')
 plt.show()
