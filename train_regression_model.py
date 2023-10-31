@@ -66,15 +66,15 @@ treatments = {
 }
 
 image_data = pd.read_csv(
-    'E:/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/Outputs/Image.csv')
+    'D:/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/Outputs/Image.csv')
 nuc_data = pd.read_csv(
-    'E:/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/Outputs/Nuclei.csv')
+    'D:/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/Outputs/Nuclei.csv')
 cyto_data = pd.read_csv(
-    'E:/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/Outputs/Cytoplasm.csv')
+    'D:/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/Outputs/Cytoplasm.csv')
 cell_data = pd.read_csv(
-    'E:/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/Outputs/Cells.csv')
+    'D:/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/Outputs/Cells.csv')
 scores = pd.read_csv(
-    'E:/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/idr0139-screenA-annotation.csv')
+    'D:/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/idr0139-screenA-annotation.csv')
 
 scores = scores[scores['Plate'] == 1093711385]
 
