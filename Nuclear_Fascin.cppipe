@@ -7,8 +7,8 @@ HasImagePlaneDetails:False
 
 Images:[module_num:1|svn_version:'Unknown'|variable_revision_number:2|show_window:False|notes:['To begin creating your project, use the Images module to compile a list of files and/or folders that you want to analyze. You can also specify a set of rules to include only the desired files in your selected folders.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
     :
-    Filter images?:Images only
-    Select the rule criteria:and (extension does isimage) (directory doesnot containregexp "[\\\\/]\\.")
+    Filter images?:Custom
+    Select the rule criteria:and (extension does istif) (file doesnot contain "OTF")
 
 Metadata:[module_num:2|svn_version:'Unknown'|variable_revision_number:6|show_window:False|notes:['The Metadata module optionally allows you to extract information describing your images (i.e, metadata) which will be stored along with your measurements. This information can be contained in the file name and/or location, or in an external file.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
     Extract metadata?:Yes
@@ -185,7 +185,7 @@ OverlayOutlines:[module_num:12|svn_version:'Unknown'|variable_revision_number:4|
     Select outline color:Red
     Select objects to display:Cells
 
-SaveImages:[module_num:13|svn_version:'Unknown'|variable_revision_number:16|show_window:False|notes:[]|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+SaveImages:[module_num:13|svn_version:'Unknown'|variable_revision_number:16|show_window:False|notes:[]|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:True]
     Select the type of image to save:Image
     Select the image to save:NucleiOverlay
     Select method for constructing file names:Sequential numbers
@@ -207,7 +207,7 @@ SaveImages:[module_num:13|svn_version:'Unknown'|variable_revision_number:16|show
 
 SaveImages:[module_num:14|svn_version:'Unknown'|variable_revision_number:16|show_window:False|notes:[]|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
     Select the type of image to save:Image
-    Select the image to save:Actin
+    Select the image to save:CellOverlay
     Select method for constructing file names:Sequential numbers
     Select image name for file prefix:None
     Enter file prefix:Cell_Outlines
