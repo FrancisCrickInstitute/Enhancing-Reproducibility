@@ -7,98 +7,75 @@ import seaborn as sns
 
 
 def normalize_well_format(well):
-    # Use regular expression to extract the letter and number parts
     match = re.match(r"([A-Za-z])([0-9]+)", well, re.I)
     if match:
         items = match.groups()
-        letter = items[0]
-        number = str(int(items[1])).zfill(2)  # Convert to integer to remove leading zeros, then back to string
-        return letter + number
-    return well  # Return the original string if no match is found
+        return f"{items[0]}{int(items[1]):02d}"
+    return well
 
 
-annotations = pd.read_csv(
-    'D:/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/idr0139-screenA-annotation.csv')
-annotations = annotations[annotations['Plate'] == 1093711385]
-annotations['Control Type'] = annotations['Control Type'].fillna('Treated').replace('', 'Treated')
-annotations['Well'] = annotations['Well'].apply(normalize_well_format)
+def load_and_prepare_data(file_path, plate_number):
+    df = pd.read_csv(file_path)
+    df = df[df['Plate'] == plate_number]
+    df['Control Type'] = df['Control Type'].fillna('Treated').replace('', 'Treated')
+    df['Well'] = df['Well'].apply(normalize_well_format)
+    return df
 
+
+annotations = load_and_prepare_data(
+    'D:/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/idr0139-screenA-annotation.csv',
+    1093711385)
 treatments = annotations.set_index('Well')['Control Type'].to_dict()
-image_data = pd.read_csv(
-    'Z:/working/barryd/IDR/Outputs/Image.csv')
-nuc_data = pd.read_csv(
-    'Z:/working/barryd/IDR/Outputs/Nuclei.csv')
-cyto_data = pd.read_csv(
-    'Z:/working/barryd/IDR/Outputs/Cytoplasm.csv')
 
-nuc_data = nuc_data.rename(columns=lambda x: 'Nuclear_' + x if 'Intensity' in x else x)
-cyto_data = cyto_data.rename(columns=lambda x: 'Cyto_' + x if 'Intensity' in x else x)
+image_data = pd.read_csv('Z:/working/barryd/IDR/Outputs/Image.csv')
+nuc_data = pd.read_csv('Z:/working/barryd/IDR/Outputs/Nuclei.csv')
+cyto_data = pd.read_csv('Z:/working/barryd/IDR/Outputs/Cytoplasm.csv')
 
-nuc_cyto_data = pd.merge(nuc_data, cyto_data, on=['ImageNumber', 'ObjectNumber'], how='left')
-combined_data = pd.merge(nuc_cyto_data, image_data, on='ImageNumber', how='left')
+# Rename columns
+nuc_data = nuc_data.add_prefix('Nuclear_')
+cyto_data = cyto_data.add_prefix('Cyto_')
 
-combined_data['Fascin_Ratio'] = combined_data['Nuclear_Intensity_MeanIntensity_Fascin'] / combined_data[
-    'Cyto_Intensity_MeanIntensity_Fascin']
-combined_data['NuclearActin_Ratio'] = combined_data['Nuclear_Intensity_MeanIntensity_NuclearActin'] / combined_data[
-    'Cyto_Intensity_MeanIntensity_NuclearActin']
+# Merge data
+combined_data = pd.merge(pd.merge(nuc_data, cyto_data, on=['ImageNumber', 'ObjectNumber'], how='left'), image_data,
+                         on='ImageNumber', how='left')
 
-combined_data['Well'] = combined_data['FileName_DNA'].str.extract(r'_(.*?)_')
+# Calculate ratios
+for compartment in ['Fascin', 'NuclearActin']:
+    combined_data[f'{compartment}_Ratio'] = combined_data[f'Nuclear_Intensity_MeanIntensity_{compartment}'] / (
+            combined_data[f'Cyto_Intensity_MeanIntensity_{compartment}'] + combined_data[
+        f'Nuclear_Intensity_MeanIntensity_{compartment}'])
+
+# Extract well information and map treatments
+combined_data['Well'] = combined_data['FileName_DNA'].str.extract(r'_(.*?)_')[0]
 combined_data['Treatment'] = combined_data['Well'].map(treatments)
 
-# Sort DataFrame by Treatment
-combined_data = combined_data.sort_values(by=['Treatment', 'Well'])
+# Filter data
+untreated_data = combined_data.query("Treatment == 'Negative Control'")
+other_data = combined_data.query("Treatment != 'Negative Control'")
 
-# Determine the order of x-axis categories
-well_order = combined_data['Well'].unique()
+unique_wells = untreated_data['Well'].unique()
+selected_wells = np.random.choice(unique_wells, min(10, len(unique_wells)), replace=False)
+filtered_untreated_data = untreated_data[untreated_data['Well'].isin(selected_wells)]
 
-# plt.figure(figsize=(20, 12))
-# Boxplot to show distribution
-# sns.boxplot(x='Well', y='Intensity_MeanIntensity_Fascin', data=combined_data, color='black', log_scale=10)
+filtered_data = pd.concat([filtered_untreated_data, other_data])
+filtered_data = filtered_data.sort_values(by=['Treatment', 'Well'])
 
-# Swarmplot to show individual data points
-# sns.swarmplot(x='Well', y='Fascin_Ratio', data=combined_data, order=well_order,
-#             palette="pastel",
-#            hue='Treatment',
-#           size=0.1,
-#          log_scale=10)
+# Plotting
+well_order = filtered_data['Well'].unique()
+fig, ax = plt.subplots(figsize=(28, 12))
 
-# sns.boxplot(x='Well', y='Fascin_Ratio', data=combined_data, order=well_order,
-#       color='white',
-#      log_scale=10, showfliers=False, showmeans=True,
-#     meanprops={"marker": "o", "markerfacecolor": "white", "markeredgecolor": "black"})
+sns.swarmplot(x='Well', y='Fascin_Ratio', data=filtered_data, order=well_order, palette="pastel", hue='Treatment',
+              size=0.4, log_scale=10, ax=ax)
+sns.boxplot(x='Well', y='Fascin_Ratio', data=filtered_data, order=well_order, color='white', log_scale=10,
+            showfliers=False, ax=ax)
 
-# handles, labels = plt.gca().get_legend_handles_labels()
-# large_markers = [mlines.Line2D([], [], color=handle.get_edgecolor(), marker='o', markersize=10, linestyle='None') for
-#         handle in handles]
-# legend = plt.legend(handles=large_markers, labels=labels, loc='center left', bbox_to_anchor=(1, 0.5), title='Treatment')
+plt.ylabel('Log[Mean_Nuclear_Fascin_Intensity / (Mean_Nuclear_Fascin_Intensity + Mean_Cytoplasmic_Fascin_Intensity)]')
 
-# plt.title('Stripplot of Intensity_MeanIntensity_Fascin grouped by Well (Log Scale)')
-# plt.savefig("output_filename.pdf", format='pdf', bbox_inches='tight')
+handles, labels = ax.get_legend_handles_labels()
+palette = sns.color_palette("pastel", n_colors=filtered_data['Treatment'].nunique())
+legend_patches = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=palette[i], markersize=10) for i in
+                  range(len(palette))]
+plt.legend(handles=legend_patches, labels=np.unique(filtered_data['Treatment']), bbox_to_anchor=(1.05, 1),
+           loc='upper left')
 
-columns_to_keep = ['Well'] + combined_data.select_dtypes(include=np.number).columns.tolist()
-df_numeric = combined_data[columns_to_keep]
-
-# 2. Aggregate the intensity measurements at the well level (using mean as an example)
-df_well_level = df_numeric.groupby('Well').median().reset_index()
-df_well_level['Treatment'] = df_well_level['Well'].map(treatments)
-
-plt.figure(figsize=(20, 12))
-# Boxplot to show distribution
-# sns.boxplot(x='Well', y='Intensity_MeanIntensity_Fascin', data=combined_data, color='black', log_scale=10)
-
-# Swarmplot to show individual data points
-sns.swarmplot(x='Treatment', y='NuclearActin_Ratio', data=df_well_level,
-              size=10, palette="pastel", hue='Treatment')
-
-sns.boxplot(x='Treatment', y='NuclearActin_Ratio', data=df_well_level, color='white',
-            showfliers=False)
-
-# plt.title('Stripplot of Intensity_MeanIntensity_Fascin grouped by Well (Log Scale)')
-plt.savefig("agg_output_filename.pdf", format='pdf', bbox_inches='tight')
-
-plt.figure(figsize=(20, 12))
-
-sns.scatterplot(x='Fascin_Ratio', y='NuclearActin_Ratio', data=df_well_level, size=20,
-                palette="pastel", hue='Treatment')
-
-plt.savefig("scatter_output_filename.pdf", format='pdf', bbox_inches='tight')
+plt.savefig("all_cells.pdf", format='pdf', bbox_inches='tight')
