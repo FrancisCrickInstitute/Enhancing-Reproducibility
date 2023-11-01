@@ -3,6 +3,7 @@ import re
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import scipy.stats
 import seaborn as sns
 
 
@@ -20,6 +21,17 @@ def load_and_prepare_data(file_path, plate_number):
     df['Control Type'] = df['Control Type'].fillna('Treated').replace('', 'Treated')
     df['Well'] = df['Well'].apply(normalize_well_format)
     return df
+
+
+# Define a function to calculate the 95% confidence interval
+def confidence_interval_95(data):
+    ci = scipy.stats.t.interval(0.95, len(data) - 1, loc=np.mean(data), scale=scipy.stats.sem(data))
+    return ci
+
+
+# Define a function to calculate the interquartile range
+def iqr(data):
+    return np.subtract(*np.percentile(data, [75, 25]))
 
 
 annotations = load_and_prepare_data(
@@ -99,3 +111,24 @@ plt.figure(figsize=(20, 12))
 sns.scatterplot(x='Fascin_Ratio', y='NuclearActin_Ratio', data=df_well_level,
                 palette="pastel", hue='Treatment')
 plt.savefig("./plots/scatter_output_filename.pdf", format='pdf', bbox_inches='tight')
+# Calculate descriptive statistics for each well
+descriptive_stats = filtered_data.groupby('Well')['Fascin_Ratio'].describe(percentiles=[.25, .5, .75])
+
+# Calculate 95% confidence interval
+descriptive_stats['95% CI lower'] = descriptive_stats['mean'] - 1.96 * (
+            descriptive_stats['std'] / np.sqrt(descriptive_stats['count']))
+descriptive_stats['95% CI upper'] = descriptive_stats['mean'] + 1.96 * (
+            descriptive_stats['std'] / np.sqrt(descriptive_stats['count']))
+
+# Calculate inter-quartile range
+descriptive_stats['IQR'] = descriptive_stats['75%'] - descriptive_stats['25%']
+
+# Reset index to merge with treatment information
+descriptive_stats.reset_index(inplace=True)
+
+# Merge with treatment information
+descriptive_stats = pd.merge(descriptive_stats, filtered_data[['Well', 'Treatment']].drop_duplicates(), on='Well',
+                             how='left')
+
+# Save the DataFrame with treatment information to a CSV file
+descriptive_stats.to_csv('./plots/descriptive_stats.csv', index=False)
