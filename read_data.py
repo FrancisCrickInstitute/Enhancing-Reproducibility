@@ -32,8 +32,8 @@ nuc_data = pd.read_csv('Z:/working/barryd/IDR/Outputs/Nuclei.csv')
 cyto_data = pd.read_csv('Z:/working/barryd/IDR/Outputs/Cytoplasm.csv')
 
 # Rename columns
-nuc_data = nuc_data.add_prefix('Nuclear_')
-cyto_data = cyto_data.add_prefix('Cyto_')
+nuc_data = nuc_data.rename(columns=lambda x: 'Nuclear_' + x if 'Intensity' in x else x)
+cyto_data = cyto_data.rename(columns=lambda x: 'Cyto_' + x if 'Intensity' in x else x)
 
 # Merge data
 combined_data = pd.merge(pd.merge(nuc_data, cyto_data, on=['ImageNumber', 'ObjectNumber'], how='left'), image_data,
@@ -75,7 +75,27 @@ handles, labels = ax.get_legend_handles_labels()
 palette = sns.color_palette("pastel", n_colors=filtered_data['Treatment'].nunique())
 legend_patches = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=palette[i], markersize=10) for i in
                   range(len(palette))]
-plt.legend(handles=legend_patches, labels=np.unique(filtered_data['Treatment']), bbox_to_anchor=(1.05, 1),
-           loc='upper left')
+plt.legend(handles=legend_patches, labels=np.unique(filtered_data['Treatment']).tolist())
 
-plt.savefig("all_cells.pdf", format='pdf', bbox_inches='tight')
+plt.savefig("./plots/all_cells.pdf", format='pdf', bbox_inches='tight')
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+columns_to_keep = ['Well'] + combined_data.select_dtypes(include=np.number).columns.tolist()
+df_numeric = combined_data[columns_to_keep]
+df_well_level = df_numeric.groupby('Well').median().reset_index()
+df_well_level['Treatment'] = df_well_level['Well'].map(treatments)
+
+plt.figure(figsize=(20, 12))
+sns.swarmplot(x='Treatment', y='NuclearActin_Ratio', data=df_well_level,
+              size=10, palette="pastel", hue='Treatment')
+sns.boxplot(x='Treatment', y='NuclearActin_Ratio', data=df_well_level, color='white',
+            showfliers=False)
+plt.savefig("./plots/well_medians.pdf", format='pdf', bbox_inches='tight')
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+plt.figure(figsize=(20, 12))
+sns.scatterplot(x='Fascin_Ratio', y='NuclearActin_Ratio', data=df_well_level,
+                palette="pastel", hue='Treatment')
+plt.savefig("./plots/scatter_output_filename.pdf", format='pdf', bbox_inches='tight')
