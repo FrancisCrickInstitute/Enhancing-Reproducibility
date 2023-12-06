@@ -35,7 +35,7 @@ def iqr(data):
 
 
 annotations = load_and_prepare_data(
-    'D:/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/idr0139-screenA-annotation.csv',
+    'E:/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/idr0139-screenA-annotation.csv',
     1093711385)
 treatments = annotations.set_index('Well')['Control Type'].to_dict()
 
@@ -62,15 +62,17 @@ combined_data['Well'] = combined_data['FileName_DNA'].str.extract(r'_(.*?)_')[0]
 combined_data['Treatment'] = combined_data['Well'].map(treatments)
 
 # Filter data
-untreated_data = combined_data.query("Treatment == 'Negative Control'")
-other_data = combined_data.query("Treatment != 'Negative Control'")
+#untreated_data = combined_data.query("Treatment == 'Negative Control'")
+#other_data = combined_data.query("Treatment != 'Negative Control'")
 
-unique_wells = untreated_data['Well'].unique()
-selected_wells = np.random.choice(unique_wells, min(10, len(unique_wells)), replace=False)
-filtered_untreated_data = untreated_data[untreated_data['Well'].isin(selected_wells)]
-
-filtered_data = pd.concat([filtered_untreated_data, other_data])
+#unique_wells = untreated_data['Well'].unique()
+#selected_wells = np.random.choice(unique_wells, min(10, len(unique_wells)), replace=False)
+selected_wells = ['D11', 'C12', 'H10', 'L08']
+#filtered_untreated_data = untreated_data[untreated_data['Well'].isin(selected_wells)]
+filtered_data = combined_data[combined_data['Well'].isin(selected_wells)]
+#filtered_data = pd.concat([filtered_untreated_data, other_data])
 filtered_data = filtered_data.sort_values(by=['Treatment', 'Well'])
+#filtered_data = combined_data.sort_values(by=['Treatment', 'Well'])
 
 # Plotting
 well_order = filtered_data['Well'].unique()
@@ -90,6 +92,8 @@ legend_patches = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=pa
 plt.legend(handles=legend_patches, labels=np.unique(filtered_data['Treatment']).tolist())
 
 plt.savefig("./plots/all_cells.pdf", format='pdf', bbox_inches='tight')
+
+filtered_data.to_csv('./plots/raw_data.csv', index=False)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -131,4 +135,4 @@ descriptive_stats = pd.merge(descriptive_stats, filtered_data[['Well', 'Treatmen
                              how='left')
 
 # Save the DataFrame with treatment information to a CSV file
-descriptive_stats.to_csv('./plots/descriptive_stats.csv', index=False)
+#descriptive_stats.to_csv('./plots/descriptive_stats.csv', index=False)
