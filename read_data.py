@@ -35,7 +35,7 @@ def iqr(data):
 
 
 annotations = load_and_prepare_data(
-    'E:/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/idr0139-screenA-annotation.csv',
+    'D:/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/idr0139-screenA-annotation.csv',
     1093711385)
 treatments = annotations.set_index('Well')['Control Type'].to_dict()
 
@@ -62,15 +62,14 @@ combined_data['Well'] = combined_data['FileName_DNA'].str.extract(r'_(.*?)_')[0]
 combined_data['Treatment'] = combined_data['Well'].map(treatments)
 
 # Filter data
-#untreated_data = combined_data.query("Treatment == 'Negative Control'")
-#other_data = combined_data.query("Treatment != 'Negative Control'")
+untreated_data = combined_data.query("Treatment == 'Negative Control'")
+other_data = combined_data.query("Treatment != 'Negative Control'")
 
-#unique_wells = untreated_data['Well'].unique()
-#selected_wells = np.random.choice(unique_wells, min(10, len(unique_wells)), replace=False)
-selected_wells = ['D11', 'C12', 'H10', 'L08']
-#filtered_untreated_data = untreated_data[untreated_data['Well'].isin(selected_wells)]
-filtered_data = combined_data[combined_data['Well'].isin(selected_wells)]
-#filtered_data = pd.concat([filtered_untreated_data, other_data])
+unique_wells = untreated_data['Well'].unique()
+selected_wells = np.random.choice(unique_wells, min(10, len(unique_wells)), replace=False)
+filtered_untreated_data = untreated_data[untreated_data['Well'].isin(selected_wells)]
+#filtered_data = combined_data[combined_data['Well'].isin(selected_wells)]
+filtered_data = pd.concat([filtered_untreated_data, other_data])
 filtered_data = filtered_data.sort_values(by=['Treatment', 'Well'])
 #filtered_data = combined_data.sort_values(by=['Treatment', 'Well'])
 
