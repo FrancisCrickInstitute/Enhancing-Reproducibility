@@ -17,19 +17,21 @@ variable_of_interest = 'Fascin_Ratio'
 sample_sizes = [*range(10, 500, 10)]  # Modify as needed
 
 # Initialize dictionaries to store results
-mean_values = {treatment: [] for treatment in data[treatment_col].unique()}
 kruskal_p_values = []
 
 num_iterations = 100
 
 # Define specific pairs for Dunn's test
-dunn_pairs = [('Untreated', 'DMSO'), ('DMSO', 'SN0212398523'), ('SN0212398523', 'Leptomycin b')]
+dunn_pairs = [('Untreated', 'DMSO'), ('Untreated', 'SN0212398523'), ('DMSO', 'SN0212398523'),
+              ('SN0212398523', 'Leptomycin b')]
 
 # Modify the dictionary initialization to store multiple p-values per sample size
 dunn_p_values = {pair: [[] for _ in range(len(sample_sizes))] for pair in dunn_pairs}
 
 # Initialize dictionaries to store multiple mean values per sample size for each treatment
 mean_values = {treatment: [[] for _ in range(len(sample_sizes))] for treatment in data[treatment_col].unique()}
+
+significant_counts = {pair: [0] * len(sample_sizes) for pair in dunn_pairs}
 
 for sample_size_index, sample_size in enumerate(sample_sizes):
     for _ in range(num_iterations):
@@ -51,6 +53,8 @@ for sample_size_index, sample_size in enumerate(sample_sizes):
             dunn_result = sp.posthoc_dunn(combined_data, val_col=variable_of_interest, group_col=treatment_col)
             for pair in dunn_pairs:
                 dunn_p_values[pair][sample_size_index].append(dunn_result.loc[pair[0], pair[1]])
+                if dunn_result.loc[pair[0], pair[1]] < 0.05:
+                    significant_counts[pair][sample_size_index] += 1
         else:
             for pair in dunn_pairs:
                 dunn_p_values[pair][sample_size_index].append(np.nan)
@@ -77,8 +81,10 @@ plt.show()
 
 # Calculate the mean, minimum, and maximum for the mean values
 mean_values_mean = {treatment: np.nanmean(mean_values[treatment], axis=1) for treatment in data[treatment_col].unique()}
-mean_values_25th = {treatment: np.nanpercentile(mean_values[treatment], 25, axis=1) for treatment in data[treatment_col].unique()}
-mean_values_75th = {treatment: np.nanpercentile(mean_values[treatment], 75, axis=1) for treatment in data[treatment_col].unique()}
+mean_values_25th = {treatment: np.nanpercentile(mean_values[treatment], 25, axis=1) for treatment in
+                    data[treatment_col].unique()}
+mean_values_75th = {treatment: np.nanpercentile(mean_values[treatment], 75, axis=1) for treatment in
+                    data[treatment_col].unique()}
 
 # Plotting the mean Fascin_Ratio for each treatment with uncertainty ranges
 plt.figure(figsize=(14, 10))
@@ -88,5 +94,20 @@ for treatment in data[treatment_col].unique():
 
 plt.xlabel('Sample Size')
 plt.ylabel('Mean Fascin_Ratio')
+plt.legend()
+plt.show()
+
+# Calculate the proportion of significant results
+significant_proportions = {pair: [count / num_iterations for count in counts] for pair, counts in
+                           significant_counts.items()}
+
+# Plotting the proportion of significant Dunn's test p-values
+plt.figure(figsize=(14, 10))
+for pair, proportions in significant_proportions.items():
+    plt.plot(sample_sizes, proportions, label=f'{pair[0]} vs {pair[1]}', marker='o')
+
+plt.xlabel('Sample Size')
+plt.ylabel('Proportion of Significant P-Values')
+plt.title('Proportion of Significant P-Values in Dunn\'s Test Across Sample Sizes')
 plt.legend()
 plt.show()
