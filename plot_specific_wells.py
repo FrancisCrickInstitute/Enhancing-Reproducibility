@@ -1,6 +1,7 @@
 import re
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
 
@@ -24,7 +25,7 @@ def load_and_prepare_data(file_path, plate_number):
 
 
 annotations = load_and_prepare_data(
-    'D:/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/idr0139-screenA-annotation.csv',
+    'E:/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/idr0139-screenA-annotation.csv',
     1093711385)
 treatments = annotations.set_index('Well')['Control Type'].to_dict()
 
@@ -75,6 +76,37 @@ plt.ylabel('Log[Mean_Nuclear_Fascin_Intensity /\n (Mean_Nuclear_Fascin_Intensity
 plt.xlabel('')
 plt.show()
 
-# plt.savefig("./plots/selected_wells_all_cells.pdf", format='pdf', bbox_inches='tight')
+plt.savefig("./plots/selected_wells_all_cells.pdf", format='pdf', bbox_inches='tight')
 
-# selected_wells_data.to_csv('./plots/selected_wells_raw_data.csv', index=False)
+untreated_data = selected_wells_data[selected_wells_data['Treatment'] == 'Untreated']
+dmso_data = selected_wells_data[selected_wells_data['Treatment'] == 'DMSO']
+treated_data = selected_wells_data[selected_wells_data['Treatment'] == 'SN0212398523']
+stim_data = selected_wells_data[selected_wells_data['Treatment'] == 'Leptomycin b']
+
+untreated_data.to_csv('./plots/untreated_raw_data.csv', index=False)
+dmso_data.to_csv('./plots/dmso_raw_data.csv', index=False)
+treated_data.to_csv('./plots/treated_raw_data.csv', index=False)
+stim_data.to_csv('./plots/stim_raw_data.csv', index=False)
+
+# Calculate descriptive statistics for each well
+descriptive_stats = selected_wells_data.groupby('Well')['Fascin_Ratio'].describe(percentiles=[.25, .5, .75])
+
+# Calculate 95% confidence interval
+descriptive_stats['95% CI lower'] = descriptive_stats['mean'] - 1.96 * (
+        descriptive_stats['std'] / np.sqrt(descriptive_stats['count']))
+descriptive_stats['95% CI upper'] = descriptive_stats['mean'] + 1.96 * (
+        descriptive_stats['std'] / np.sqrt(descriptive_stats['count']))
+
+# Calculate inter-quartile range
+descriptive_stats['IQR'] = descriptive_stats['75%'] - descriptive_stats['25%']
+
+# Reset index to merge with treatment information
+descriptive_stats.reset_index(inplace=True)
+
+# Merge with treatment information
+descriptive_stats = pd.merge(descriptive_stats, selected_wells_data[['Well', 'Treatment']].drop_duplicates(), on='Well',
+                             how='left')
+
+# Save the DataFrame with treatment information to a CSV file
+descriptive_stats.to_csv('./plots/selected_wells_descriptive_stats.csv', index=False)
+selected_wells_data.to_csv('./plots/selected_wells_raw_data.csv', index=False)
