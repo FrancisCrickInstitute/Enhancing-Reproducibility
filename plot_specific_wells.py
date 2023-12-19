@@ -3,6 +3,8 @@ import re
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import scikit_posthocs as sp
+import scipy.stats as stats
 import seaborn as sns
 
 plt.rcParams['font.size'] = 16
@@ -24,8 +26,16 @@ def load_and_prepare_data(file_path, plate_number):
     return df
 
 
+sample_size = 50
+n_samples = 1
+treatment_col = 'Treatment'
+variable_of_interest = 'Fascin_Ratio'
+dunn_pairs = [('Untreated', 'DMSO'), ('Untreated', 'SN0212398523'), ('DMSO', 'SN0212398523'),
+              ('SN0212398523', 'Leptomycin b')]
+dunn_p_values = {pair: [[] for _ in range(n_samples)] for pair in dunn_pairs}
+
 annotations = load_and_prepare_data(
-    'E:/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/idr0139-screenA-annotation.csv',
+    'D:/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/idr0139-screenA-annotation.csv',
     1093711385)
 treatments = annotations.set_index('Well')['Control Type'].to_dict()
 
@@ -63,50 +73,103 @@ color_dict = {'SN0212398523': 'orange', 'Untreated': 'blue', 'DMSO': 'gray', 'Le
 # Plotting
 well_order = selected_wells_data['Well'].unique()
 treatment_order = selected_wells_data['Treatment'].unique()
-fig, ax = plt.subplots(figsize=(14, 10))
+# fig, ax = plt.subplots(figsize=(14, 10))
+#
+# sns.swarmplot(x='Treatment', y='Fascin_Ratio', data=selected_wells_data,
+#               order=['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'], palette=color_dict,
+#               hue='Treatment', size=2.75, alpha=0.9, ax=ax)
+# sns.boxplot(x='Treatment', y='Fascin_Ratio', data=selected_wells_data,
+#             order=['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'], color='white',
+#             showfliers=False, ax=ax)
+#
+# plt.ylabel('Log[Mean_Nuclear_Fascin_Intensity /\n (Mean_Nuclear_Fascin_Intensity + Mean_Cytoplasmic_Fascin_Intensity)]')
+# plt.xlabel('')
+# plt.show()
 
-sns.swarmplot(x='Treatment', y='Fascin_Ratio', data=selected_wells_data,
-              order=['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'], palette=color_dict,
-              hue='Treatment', size=2.75, alpha=0.9, ax=ax)
-sns.boxplot(x='Treatment', y='Fascin_Ratio', data=selected_wells_data,
-            order=['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'], color='white',
-            showfliers=False, ax=ax)
+# plt.savefig("./plots/selected_wells_all_cells.pdf", format='pdf', bbox_inches='tight')
 
-plt.ylabel('Log[Mean_Nuclear_Fascin_Intensity /\n (Mean_Nuclear_Fascin_Intensity + Mean_Cytoplasmic_Fascin_Intensity)]')
-plt.xlabel('')
-plt.show()
+for sample_index, _ in enumerate(range(n_samples)):
 
-plt.savefig("./plots/selected_wells_all_cells.pdf", format='pdf', bbox_inches='tight')
+    untreated_data = selected_wells_data[selected_wells_data['Treatment'] == 'Untreated'].sample(n=sample_size,
+                                                                                                 replace=False)
+    dmso_data = selected_wells_data[selected_wells_data['Treatment'] == 'DMSO'].sample(n=sample_size, replace=False)
+    treated_data = selected_wells_data[selected_wells_data['Treatment'] == 'SN0212398523'].sample(n=sample_size,
+                                                                                                  replace=False)
+    stim_data = selected_wells_data[selected_wells_data['Treatment'] == 'Leptomycin b'].sample(n=sample_size,
+                                                                                               replace=False)
 
-untreated_data = selected_wells_data[selected_wells_data['Treatment'] == 'Untreated']
-dmso_data = selected_wells_data[selected_wells_data['Treatment'] == 'DMSO']
-treated_data = selected_wells_data[selected_wells_data['Treatment'] == 'SN0212398523']
-stim_data = selected_wells_data[selected_wells_data['Treatment'] == 'Leptomycin b']
+    sampled_data = pd.concat([untreated_data, dmso_data, treated_data, stim_data])
 
-untreated_data.to_csv('./plots/untreated_raw_data.csv', index=False)
-dmso_data.to_csv('./plots/dmso_raw_data.csv', index=False)
-treated_data.to_csv('./plots/treated_raw_data.csv', index=False)
-stim_data.to_csv('./plots/stim_raw_data.csv', index=False)
+    fig, ax = plt.subplots(figsize=(14, 10))
 
-# Calculate descriptive statistics for each well
-descriptive_stats = selected_wells_data.groupby('Well')['Fascin_Ratio'].describe(percentiles=[.25, .5, .75])
+    sns.swarmplot(x='Treatment', y='Fascin_Ratio', data=sampled_data,
+                  order=['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'], palette=color_dict,
+                  hue='Treatment', size=2.75, alpha=0.9, ax=ax)
+    sns.boxplot(x='Treatment', y='Fascin_Ratio', data=sampled_data,
+                order=['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'], color='white',
+                showfliers=False, ax=ax)
 
-# Calculate 95% confidence interval
-descriptive_stats['95% CI lower'] = descriptive_stats['mean'] - 1.96 * (
-        descriptive_stats['std'] / np.sqrt(descriptive_stats['count']))
-descriptive_stats['95% CI upper'] = descriptive_stats['mean'] + 1.96 * (
-        descriptive_stats['std'] / np.sqrt(descriptive_stats['count']))
+    plt.ylabel(
+        'Log[Mean_Nuclear_Fascin_Intensity /\n (Mean_Nuclear_Fascin_Intensity + Mean_Cytoplasmic_Fascin_Intensity)]')
+    plt.xlabel('')
 
-# Calculate inter-quartile range
-descriptive_stats['IQR'] = descriptive_stats['75%'] - descriptive_stats['25%']
+    _, p_value = stats.kruskal(
+        *(sampled_data[sampled_data[treatment_col] == t][variable_of_interest] for t in
+          sampled_data[treatment_col].unique()))
 
-# Reset index to merge with treatment information
-descriptive_stats.reset_index(inplace=True)
+    if p_value < 0.05:
+        dunn_result = sp.posthoc_dunn(sampled_data, val_col=variable_of_interest, group_col=treatment_col)
+        for pair in dunn_pairs:
+            dunn_p_values[pair][sample_index].append(dunn_result.loc[pair[0], pair[1]])
+    else:
+        for pair in dunn_pairs:
+            dunn_p_values[pair][sample_index].append(np.nan)
 
-# Merge with treatment information
-descriptive_stats = pd.merge(descriptive_stats, selected_wells_data[['Well', 'Treatment']].drop_duplicates(), on='Well',
-                             how='left')
+    y, h, col = sampled_data[variable_of_interest].max() + 0.02, 0.02, 'k'
 
-# Save the DataFrame with treatment information to a CSV file
-descriptive_stats.to_csv('./plots/selected_wells_descriptive_stats.csv', index=False)
-selected_wells_data.to_csv('./plots/selected_wells_raw_data.csv', index=False)
+    for pair in dunn_pairs:
+        x1, x2 = pair
+        x1 = [label.get_text() for label in ax.get_xticklabels()].index(x1)
+        x2 = [label.get_text() for label in ax.get_xticklabels()].index(x2)
+
+        # Draw line
+        plt.plot([x1, x1, x2, x2], [y, y + h, y + h, y], lw=1.5, c=col)
+
+        # Annotate line with p-value
+        plt.text((x1 + x2) * .5, y + h, f'p = {dunn_p_values[pair][sample_index][0]:.4f}', ha='center', va='bottom',
+                 color=col)
+
+    plt.show()
+
+for sample_index, n in enumerate(range(n_samples)):
+    print('Sample ' + str(sample_index))
+    for pair in dunn_pairs:
+        print(pair[0] + '-' + pair[1] + ': ' + str(dunn_p_values[pair][sample_index]))
+
+# untreated_data.to_csv('./plots/untreated_raw_data.csv', index=False)
+# dmso_data.to_csv('./plots/dmso_raw_data.csv', index=False)
+# treated_data.to_csv('./plots/treated_raw_data.csv', index=False)
+# stim_data.to_csv('./plots/stim_raw_data.csv', index=False)
+#
+# # Calculate descriptive statistics for each well
+# descriptive_stats = selected_wells_data.groupby('Well')['Fascin_Ratio'].describe(percentiles=[.25, .5, .75])
+#
+# # Calculate 95% confidence interval
+# descriptive_stats['95% CI lower'] = descriptive_stats['mean'] - 1.96 * (
+#         descriptive_stats['std'] / np.sqrt(descriptive_stats['count']))
+# descriptive_stats['95% CI upper'] = descriptive_stats['mean'] + 1.96 * (
+#         descriptive_stats['std'] / np.sqrt(descriptive_stats['count']))
+#
+# # Calculate inter-quartile range
+# descriptive_stats['IQR'] = descriptive_stats['75%'] - descriptive_stats['25%']
+#
+# # Reset index to merge with treatment information
+# descriptive_stats.reset_index(inplace=True)
+#
+# # Merge with treatment information
+# descriptive_stats = pd.merge(descriptive_stats, selected_wells_data[['Well', 'Treatment']].drop_duplicates(), on='Well',
+#                              how='left')
+#
+# # Save the DataFrame with treatment information to a CSV file
+# descriptive_stats.to_csv('./plots/selected_wells_descriptive_stats.csv', index=False)
+# selected_wells_data.to_csv('./plots/selected_wells_raw_data.csv', index=False)
