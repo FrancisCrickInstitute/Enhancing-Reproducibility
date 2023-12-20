@@ -27,15 +27,15 @@ def load_and_prepare_data(file_path, plate_number):
 
 
 sample_size = 50
-n_samples = 1
+n_samples = 4
 treatment_col = 'Treatment'
 variable_of_interest = 'Fascin_Ratio'
-dunn_pairs = [('Untreated', 'DMSO'), ('Untreated', 'SN0212398523'), ('DMSO', 'SN0212398523'),
-              ('SN0212398523', 'Leptomycin b')]
+dunn_pairs = [('Untreated', 'DMSO'), ('DMSO', 'SN0212398523'), ('SN0212398523', 'Leptomycin b'),
+              ('Untreated', 'SN0212398523')]
 dunn_p_values = {pair: [[] for _ in range(n_samples)] for pair in dunn_pairs}
 
 annotations = load_and_prepare_data(
-    'D:/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/idr0139-screenA-annotation.csv',
+    'E:/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/idr0139-screenA-annotation.csv',
     1093711385)
 treatments = annotations.set_index('Well')['Control Type'].to_dict()
 
@@ -125,12 +125,30 @@ for sample_index, _ in enumerate(range(n_samples)):
         for pair in dunn_pairs:
             dunn_p_values[pair][sample_index].append(np.nan)
 
-    y, h, col = sampled_data[variable_of_interest].max() + 0.02, 0.02, 'k'
+    y, h, col = sampled_data[variable_of_interest].max() + 0.02, 0.02, 'black'
+
+    ymax = []
+    for t in range(len(treatments_to_compounds) - 1):
+        ymax.append(0)
 
     for pair in dunn_pairs:
         x1, x2 = pair
         x1 = [label.get_text() for label in ax.get_xticklabels()].index(x1)
         x2 = [label.get_text() for label in ax.get_xticklabels()].index(x2)
+
+        y = sampled_data[sampled_data['Treatment'].isin(pair)].loc[:, variable_of_interest].max() + 0.02
+
+        for x in range(min(x1, x2), max(x1, x2)):
+            if y <= ymax[x] + 0.075:
+                y = ymax[x] + 0.075
+            ymax[x] = y
+
+        if x1 < x2:
+            x1 += 0.02
+            x2 -= 0.02
+        else:
+            x1 -= 0.02
+            x2 += 0.02
 
         # Draw line
         plt.plot([x1, x1, x2, x2], [y, y + h, y + h, y], lw=1.5, c=col)
@@ -141,10 +159,6 @@ for sample_index, _ in enumerate(range(n_samples)):
 
     plt.show()
 
-for sample_index, n in enumerate(range(n_samples)):
-    print('Sample ' + str(sample_index))
-    for pair in dunn_pairs:
-        print(pair[0] + '-' + pair[1] + ': ' + str(dunn_p_values[pair][sample_index]))
 
 # untreated_data.to_csv('./plots/untreated_raw_data.csv', index=False)
 # dmso_data.to_csv('./plots/dmso_raw_data.csv', index=False)
