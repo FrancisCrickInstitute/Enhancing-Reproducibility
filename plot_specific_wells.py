@@ -1,3 +1,4 @@
+import math
 import re
 
 import matplotlib.pyplot as plt
@@ -26,7 +27,7 @@ def load_and_prepare_data(file_path, plate_number):
     return df
 
 
-sample_size = 50
+sample_size = 500
 n_samples = 4
 treatment_col = 'Treatment'
 variable_of_interest = 'Fascin_Ratio'
@@ -88,6 +89,8 @@ treatment_order = selected_wells_data['Treatment'].unique()
 
 # plt.savefig("./plots/selected_wells_all_cells.pdf", format='pdf', bbox_inches='tight')
 
+fig = plt.figure(num=1, figsize=(28, 20))
+
 for sample_index, _ in enumerate(range(n_samples)):
 
     untreated_data = selected_wells_data[selected_wells_data['Treatment'] == 'Untreated'].sample(n=sample_size,
@@ -100,7 +103,7 @@ for sample_index, _ in enumerate(range(n_samples)):
 
     sampled_data = pd.concat([untreated_data, dmso_data, treated_data, stim_data])
 
-    fig, ax = plt.subplots(figsize=(14, 10))
+    ax = plt.subplot(2, 2, sample_index + 1)
 
     sns.swarmplot(x='Treatment', y='Fascin_Ratio', data=sampled_data,
                   order=['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'], palette=color_dict,
@@ -153,12 +156,22 @@ for sample_index, _ in enumerate(range(n_samples)):
         # Draw line
         plt.plot([x1, x1, x2, x2], [y, y + h, y + h, y], lw=1.5, c=col)
 
+        raw_p_value = dunn_p_values[pair][sample_index][0]
+        str_p_value = f'p = {raw_p_value:.4f}'
+        if raw_p_value < 0.0001:
+            str_p_value = 'p < 0.0001'
+        elif raw_p_value < 0.001:
+            str_p_value = 'p < 0.001'
+        elif raw_p_value < 0.01:
+            str_p_value = 'p < 0.01'
+        elif raw_p_value < 0.05:
+            str_p_value = 'p < 0.05'
+
         # Annotate line with p-value
-        plt.text((x1 + x2) * .5, y + h, f'p = {dunn_p_values[pair][sample_index][0]:.4f}', ha='center', va='bottom',
+        plt.text((x1 + x2) * .5, y + h, str_p_value, ha='center', va='bottom',
                  color=col)
 
-    plt.show()
-
+plt.show()
 
 # untreated_data.to_csv('./plots/untreated_raw_data.csv', index=False)
 # dmso_data.to_csv('./plots/dmso_raw_data.csv', index=False)
