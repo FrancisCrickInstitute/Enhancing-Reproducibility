@@ -18,59 +18,49 @@ nuc_data = pd.read_csv('./inputs/cell_profiler_outputs/Nuclei.csv')
 cyto_data = pd.read_csv('./inputs/cell_profiler_outputs/Cytoplasm.csv')
 treatments = annotations.set_index('Well')['Control Type'].to_dict()
 
-# # FIGURE 1
-# selected_wells_data = prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds,
-#                                    ['J05', 'E22'])
-# generate_swarmplot(14, 10, 1, 1, ['Untreated', 'SN0212398523'], 1, -1, selected_wells_data,
-#                    color_dict, treatment_col, variable_of_interest, [dunn_pairs[3]], treatments_to_compounds)
-#
-# # FIGURE 2
-# selected_wells_data = prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds,
-#                                    ['J05', 'O02', 'E22'])
-# generate_swarmplot(14, 10, 1, 1, ['Untreated', 'DMSO', 'SN0212398523'], 1, -1, selected_wells_data,
-#                    color_dict, treatment_col, variable_of_interest, [dunn_pairs[0], dunn_pairs[1], dunn_pairs[3]],
-#                    treatments_to_compounds)
-#
-# # FIGURE 3
-# selected_wells_data = prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds,
-#                                    ['J05', 'O02', 'E22', 'L08'])
-# generate_swarmplot(14, 10, 1, 1, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'], 1, -1, selected_wells_data,
-#                    color_dict, treatment_col, variable_of_interest, dunn_pairs, treatments_to_compounds)
+data_subset = prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds,
+                           ['J05', 'O02', 'E22', 'L08'])
 
-# # TABLE 1
-# generate_table(
-#     prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds, ['J05', 'O02', 'E22', 'L08']))
+# FIGURE 1
+generate_swarmplot(14, 10, 1, 1, ['Untreated', 'SN0212398523'], 1, -1,
+                   data_subset[data_subset['Well'].isin(['J05', 'E22'])], color_dict, treatment_col,
+                   variable_of_interest, [dunn_pairs[3]], treatments_to_compounds)
 
-# # FIGURE 4
-# plot_mean_v_sample_size([*range(10, 500, 10)], 100,
-#                         prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds,
-#                                      ['J05', 'O02', 'E22', 'L08']), treatment_col, variable_of_interest)
+# FIGURE 2
+generate_swarmplot(14, 10, 1, 1, ['Untreated', 'DMSO', 'SN0212398523'], 1, -1,
+                   data_subset[data_subset['Well'].isin(['J05', 'O02', 'E22'])], color_dict, treatment_col,
+                   variable_of_interest, [dunn_pairs[0], dunn_pairs[1], dunn_pairs[3]], treatments_to_compounds)
 
-# # FIGURE 5
-# plot_p_v_sample_size([*range(10, 500, 10)], 100,
-#                      prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds,
-#                                   ['J05', 'O02', 'E22', 'L08']), treatment_col, variable_of_interest, dunn_pairs)
+# FIGURE 3
+generate_swarmplot(14, 10, 1, 1, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
+                   1, -1, data_subset, color_dict, treatment_col, variable_of_interest, dunn_pairs,
+                   treatments_to_compounds)
+
+# TABLE 1
+generate_table(data_subset)
+
+# FIGURE 4
+plot_mean_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, variable_of_interest)
+
+# FIGURE 5
+plot_p_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, variable_of_interest, dunn_pairs)
 
 # FIGURE 6
-selected_wells_data = prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds,
-                                   ['J05', 'O02', 'E22', 'L08'])
-generate_swarmplot(28, 20, 2, 2, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'], 4, 50, selected_wells_data,
-                   color_dict, treatment_col, variable_of_interest, dunn_pairs, treatments_to_compounds)
+generate_swarmplot(28, 20, 2, 2, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
+                   4, 50, data_subset, color_dict, treatment_col, variable_of_interest, dunn_pairs,
+                   treatments_to_compounds)
 
 # FIGURE 7
-selected_wells_data = prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds,
-                                   ['J05', 'O02', 'E22', 'L08'])
-generate_swarmplot(28, 20, 2, 2, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'], 4, 100, selected_wells_data,
-                   color_dict, treatment_col, variable_of_interest, dunn_pairs, treatments_to_compounds)
+generate_swarmplot(28, 20, 2, 2, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
+                   4, 100, data_subset, color_dict, treatment_col, variable_of_interest, dunn_pairs,
+                   treatments_to_compounds)
 
 # FIGURE 8
-selected_wells_data = prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds,
-                                   ['J05', 'O02', 'E22', 'L08'])
-generate_swarmplot(28, 20, 2, 2, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'], 4, 250, selected_wells_data,
-                   color_dict, treatment_col, variable_of_interest, dunn_pairs, treatments_to_compounds)
+generate_swarmplot(28, 20, 2, 2, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
+                   4, 250, data_subset, color_dict, treatment_col, variable_of_interest, dunn_pairs,
+                   treatments_to_compounds)
 
 # FIGURE 9
-selected_wells_data = prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds,
-                                   ['J05', 'O02', 'E22', 'L08'])
-generate_swarmplot(28, 20, 2, 2, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'], 4, 500, selected_wells_data,
-                   color_dict, treatment_col, variable_of_interest, dunn_pairs, treatments_to_compounds)
+generate_swarmplot(28, 20, 2, 2, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
+                   4, 500, data_subset, color_dict, treatment_col, variable_of_interest, dunn_pairs,
+                   treatments_to_compounds)
