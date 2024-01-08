@@ -1,5 +1,6 @@
 from utility_functions import *
 
+plt.rcParams['font.size'] = 16
 plate_number = 1093711385
 treatment_col = 'Treatment'
 variable_of_interest = 'Fascin_Ratio'
@@ -20,6 +21,8 @@ treatments = annotations.set_index('Well')['Control Type'].to_dict()
 
 data_subset = prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds,
                            ['J05', 'O02', 'E22', 'L08'])
+
+#data_subset.to_csv('./all_data.csv')
 
 # FIGURE 1
 generate_swarmplot(14, 10, 1, 1, ['Untreated', 'SN0212398523'], 1, -1,
@@ -61,6 +64,9 @@ generate_swarmplot(28, 20, 2, 2, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomyc
                    treatments_to_compounds)
 
 # FIGURE 9
-generate_swarmplot(28, 20, 2, 2, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
-                   4, 500, data_subset, color_dict, treatment_col, variable_of_interest, dunn_pairs,
-                   treatments_to_compounds)
+for i in range(4):
+    generate_swarmplot(14, 10, 1, 1, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
+                       1, 500, data_subset, color_dict, treatment_col, variable_of_interest, dunn_pairs,
+                       treatments_to_compounds)
+
+print('All Done!')
