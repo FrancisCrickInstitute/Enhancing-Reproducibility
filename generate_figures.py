@@ -1,6 +1,6 @@
 from utility_functions import *
 
-plt.rcParams['font.size'] = 16
+plt.rcParams['font.size'] = 28
 plate_number = 1093711385
 treatment_col = 'Treatment'
 variable_of_interest = 'Fascin_Ratio'
@@ -9,6 +9,13 @@ treatments_to_compounds = {'Treated': 'SN0212398523', 'Negative Control': 'Untre
 dunn_pairs = [('Untreated', 'DMSO'), ('DMSO', 'SN0212398523'), ('SN0212398523', 'Leptomycin b'),
               ('Untreated', 'SN0212398523')]
 color_dict = {'SN0212398523': 'orange', 'Untreated': 'blue', 'DMSO': 'gray', 'Leptomycin b': 'purple'}
+
+directories = ('./inputs/idr', './outputs/plots', './outputs/data')
+
+for d in directories:
+    if not os.path.exists(d):
+        os.makedirs(d)
+
 idr_annotations_file_path = './inputs/idr/idr0139-screenA-annotation.csv'
 idr_annotations_url = 'https://raw.githubusercontent.com/IDR/idr0139-lawson-fascin/main/screenA/idr0139-screenA-annotation.csv'
 
@@ -22,7 +29,7 @@ treatments = annotations.set_index('Well')['Control Type'].to_dict()
 data_subset = prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds,
                            ['J05', 'O02', 'E22', 'L08'])
 
-#data_subset.to_csv('./all_data.csv')
+# data_subset.to_csv('./all_data.csv')
 
 # FIGURE 1
 generate_swarmplot(14, 10, 1, 1, ['Untreated', 'SN0212398523'], 1, -1,
@@ -67,6 +74,6 @@ generate_swarmplot(28, 20, 2, 2, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomyc
 for i in range(4):
     generate_swarmplot(14, 10, 1, 1, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
                        1, 500, data_subset, color_dict, treatment_col, variable_of_interest, dunn_pairs,
-                       treatments_to_compounds)
+                       treatments_to_compounds, 'Relative Nuclear Fascin Localisation')
 
 print('All Done!')
