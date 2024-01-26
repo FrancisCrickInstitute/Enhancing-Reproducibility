@@ -85,7 +85,7 @@ def generate_swarmplot(fig_width, fig_height, plot_rows, plot_cols, plot_order, 
             untreated_data.to_csv(f'./outputs/data/untreated_raw_data_{sample_size:03}_{sample_index:01}.csv',
                                   index=False)
             dmso_data.to_csv(f'./outputs/data/dmso_data_{sample_size:03}_{sample_index:01}.csv', index=False)
-            treated_data.to_csv(f'./outputs/data/ treated_data_{sample_size:03}_{sample_index:01}.csv', index=False)
+            treated_data.to_csv(f'./outputs/data/treated_data_{sample_size:03}_{sample_index:01}.csv', index=False)
             stim_data.to_csv(f'./outputs/data/stim_data_{sample_size:03}_{sample_index:01}.csv', index=False)
         else:
             sampled_data = data
