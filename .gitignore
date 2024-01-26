@@ -1,3 +1,10 @@
 /outputs/
 /.idea/
 /__pycache__/
+.ipynb_checkpoints
+.DS_store
+/notebooks/__pycache__/
+/notebooks/.ipynb_checkpoints
+/notebooks/inputs
+/notebooks/outputs
+/notebooks/.DS_store
