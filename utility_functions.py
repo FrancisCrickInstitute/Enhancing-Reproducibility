@@ -8,6 +8,12 @@ import requests
 import scikit_posthocs as sp
 import scipy.stats as stats
 import seaborn as sns
+from scipy.optimize import curve_fit
+
+
+# Define the decaying exponential function
+def exp_decay(x, a, b, c):
+    return a * np.exp(-b * x) + c
 
 
 def normalize_well_format(well):
@@ -218,6 +224,44 @@ def plot_mean_v_sample_size(sample_sizes, num_iterations, data, treatment_col, v
     for treatment in data[treatment_col].unique():
         plt.plot(sample_sizes, mean_values_mean[treatment], label=treatment)
         plt.fill_between(sample_sizes, mean_values_25th[treatment], mean_values_75th[treatment], alpha=0.2)
+
+    plt.xlabel('Sample Size')
+    plt.ylabel(y_label)
+    plt.legend(fontsize=20)
+    plt.show()
+
+
+def plot_iqr_v_sample_size(sample_sizes, num_iterations, data, treatment_col, variable_of_interest, y_label):
+    # Initialize dictionaries to store multiple mean values per sample size for each treatment
+    mean_values = {treatment: [[] for _ in range(len(sample_sizes))] for treatment in data[treatment_col].unique()}
+    for sample_size_index, sample_size in enumerate(sample_sizes):
+        for _ in range(num_iterations):
+            combined_data = pd.DataFrame()
+            for treatment in data[treatment_col].unique():
+                subsample = data[data[treatment_col] == treatment].sample(n=sample_size, replace=False)
+                q1, q3 = np.percentile(subsample[variable_of_interest], [25, 75])
+                iqr = q3 - q1
+                mean_values[treatment][sample_size_index].append(iqr)
+                combined_data = pd.concat([combined_data, subsample])
+
+    # Calculate the mean, minimum, and maximum for the mean values
+    iqr_values_min = {treatment: np.nanmin(mean_values[treatment], axis=1) for treatment in
+                      data[treatment_col].unique()}
+    iqr_values_max = {treatment: np.nanmax(mean_values[treatment], axis=1) for treatment in
+                      data[treatment_col].unique()}
+
+    # Plotting
+    plt.figure(figsize=(14, 10))
+    for treatment in data[treatment_col].unique():
+        diff_iqr = iqr_values_max[treatment] - iqr_values_min[treatment]
+        plt.scatter(sample_sizes, diff_iqr, label=treatment, alpha=0.5)
+        initial_guesses = [1, 0.01, np.median(diff_iqr)]
+        # Fit the decaying exponential function
+        params, _ = curve_fit(exp_decay, sample_sizes, diff_iqr, p0=initial_guesses, maxfev=5000)
+
+        # Generate the fitted curve
+        fitted_curve = exp_decay(np.array(sample_sizes), *params)
+        plt.plot(sample_sizes, fitted_curve, label=f"{treatment} exp fit", linestyle='--')
 
     plt.xlabel('Sample Size')
     plt.ylabel(y_label)
