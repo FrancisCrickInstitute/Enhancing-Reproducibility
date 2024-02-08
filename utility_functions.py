@@ -271,11 +271,16 @@ def plot_iqr_v_sample_size(sample_sizes, num_iterations, data, treatment_col, va
 
 def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col, treatment):
     total_samples = []
-    max_samples = 250
-    step = 25
+    max_samples = 500
+    step = 10
+    sample_sizes = range(step, max_samples + 1, step)
 
     subsample = data[data[treatment_col] == treatment]
-    for sample_size in range(step, max_samples + 1, step):
+    median_values = []
+    mean_values = []
+    sd_values = []
+    iqr_values = []
+    for sample_size in sample_sizes:
         # Determine the number of new samples to add
         new_samples_count = sample_size - len(total_samples)
 
@@ -295,6 +300,13 @@ def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col,
         median = sample_data.median()
         q1 = sample_data.quantile(0.25)
         q3 = sample_data.quantile(0.75)
+        mean = sample_data.mean()
+        sd = sample_data.std()
+
+        mean_values.append(mean)
+        median_values.append(median)
+        sd_values.append(sd)
+        iqr_values.append(q3 - q1)
 
         # Plot histogram
         plt.figure(figsize=(10, 6))
@@ -323,6 +335,18 @@ def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col,
         # Break the loop if we have included all available samples
         if remaining_samples <= new_samples_count:
             break
+
+    plt.figure(figsize=(14, 10))
+    ax1 = plt.gca()
+    ax1.scatter(sample_sizes, mean_values, label='Mean', alpha=0.5, color='blue')
+    ax1.scatter(sample_sizes, median_values, label='Median', alpha=0.5, color='orange')
+    ax2=ax1.twinx()
+    ax2.scatter(sample_sizes, sd_values, label='Standard Deviation', alpha=0.5, color='gray')
+    ax2.scatter(sample_sizes, iqr_values, label='Inter-Quartile Range', alpha=0.5, color='purple')
+    plt.xlabel('Sample Size')
+    # plt.ylabel(y_label)
+    plt.legend(fontsize=20)
+    plt.show()
 
 
 # Assuming you have a dataframe 'df' loaded with the column 'your_column_name',

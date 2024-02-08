@@ -76,7 +76,7 @@ data_subset = prepare_data(nuc_data, cyto_data, image_data, treatments, treatmen
 #                        1, 500, data_subset, color_dict, treatment_col, variable_of_interest, dunn_pairs,
 #                        treatments_to_compounds, 'Relative Nuclear Fascin Localisation')
 
-plot_iqr_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, variable_of_interest, 'Error in Inter-Quartile Range')
+# plot_iqr_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, variable_of_interest, 'Error in Inter-Quartile Range')
 
 plot_cumulative_histogram_samples(data_subset, variable_of_interest, treatment_col, 'Untreated')
 
