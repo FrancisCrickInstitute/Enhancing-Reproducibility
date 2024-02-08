@@ -269,6 +269,67 @@ def plot_iqr_v_sample_size(sample_sizes, num_iterations, data, treatment_col, va
     plt.show()
 
 
+def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col, treatment):
+    total_samples = []
+    max_samples = 250
+    step = 25
+
+    subsample = data[data[treatment_col] == treatment]
+    for sample_size in range(step, max_samples + 1, step):
+        # Determine the number of new samples to add
+        new_samples_count = sample_size - len(total_samples)
+
+        # Ensure we don't sample more than what's available in the dataframe
+        remaining_samples = subsample[~subsample.index.isin(total_samples)].shape[0]
+        new_samples_count = min(new_samples_count, remaining_samples)
+
+        # Sample additional data and add it to the total_samples list
+        if new_samples_count > 0:
+            new_samples = subsample[~subsample.index.isin(total_samples)].sample(n=new_samples_count,
+                                                                                 replace=False).index.tolist()
+            total_samples.extend(new_samples)
+
+        # Extract the data for the current total samples
+        sample_data = subsample.loc[total_samples, variable_of_interest]
+
+        median = sample_data.median()
+        q1 = sample_data.quantile(0.25)
+        q3 = sample_data.quantile(0.75)
+
+        # Plot histogram
+        plt.figure(figsize=(10, 6))
+        n, bins, patches = plt.hist(sample_data, bins=50, alpha=0.75, density=True)
+        plt.axvline(x=median, color='r', linestyle='--', label='Median')
+        plt.axvline(x=q1, color='g', linestyle='-', label='Q1')
+        plt.axvline(x=q3, color='b', linestyle='-', label='Q3')
+        # Calculate the density
+        bin_maxes = np.maximum.reduceat(n, np.digitize([q1, q3], bins[:-1]) - 1)
+        max_density = max(bin_maxes)
+
+        # Shade the IQR region
+        plt.fill_betweenx(np.arange(0, max_density, 0.01), q1, q3, color='grey', alpha=0.3, label='IQR')
+
+        plt.title(f'Histogram of {len(total_samples)} cumulative random samples from {variable_of_interest}')
+        plt.xlabel(variable_of_interest)
+        plt.ylabel('Frequency')
+        plt.ylim(bottom=0, top=20)
+        plt.xlim(left=0, right=1)
+        plt.grid(True)
+        plt.show()
+
+        print(
+            f'Median: {np.median(sample_data)} IQR: {np.percentile(sample_data, 75) - np.percentile(sample_data, 25)}')
+
+        # Break the loop if we have included all available samples
+        if remaining_samples <= new_samples_count:
+            break
+
+
+# Assuming you have a dataframe 'df' loaded with the column 'your_column_name',
+# you would call the function like this:
+# plot_cumulative_histogram_samples(df, 'your_column_name')
+
+
 def plot_p_v_sample_size(sample_sizes, num_iterations, data, treatment_col, variable_of_interest, dunn_pairs):
     # Modify the dictionary initialization to store multiple p-values per sample size
     dunn_p_values = {pair: [[] for _ in range(len(sample_sizes))] for pair in dunn_pairs}
