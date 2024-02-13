@@ -271,10 +271,17 @@ def plot_iqr_v_sample_size(sample_sizes, num_iterations, data, treatment_col, va
 
 def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col, treatment):
     total_samples = []
-    max_samples = 250
-    step = 25
+    max_samples = 500
+    step = 10
 
     subsample = data[data[treatment_col] == treatment]
+
+    median_values = []
+    mean_values = []
+    std_values = []
+    iqr_values = []
+    sample_sizes = []
+
     for sample_size in range(step, max_samples + 1, step):
         # Determine the number of new samples to add
         new_samples_count = sample_size - len(total_samples)
@@ -293,29 +300,39 @@ def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col,
         sample_data = subsample.loc[total_samples, variable_of_interest]
 
         median = sample_data.median()
+        mean = sample_data.mean()
+        std = sample_data.std()
         q1 = sample_data.quantile(0.25)
         q3 = sample_data.quantile(0.75)
+        iqr = q3 - q1
 
-        # Plot histogram
-        plt.figure(figsize=(10, 6))
-        n, bins, patches = plt.hist(sample_data, bins=50, alpha=0.75, density=True)
-        plt.axvline(x=median, color='r', linestyle='--', label='Median')
-        plt.axvline(x=q1, color='g', linestyle='-', label='Q1')
-        plt.axvline(x=q3, color='b', linestyle='-', label='Q3')
-        # Calculate the density
-        bin_maxes = np.maximum.reduceat(n, np.digitize([q1, q3], bins[:-1]) - 1)
-        max_density = max(bin_maxes)
+        median_values.append(median)
+        mean_values.append(mean)
+        std_values.append(std)
+        iqr_values.append(iqr)
+        sample_sizes.append(sample_size)
 
-        # Shade the IQR region
-        plt.fill_betweenx(np.arange(0, max_density, 0.01), q1, q3, color='grey', alpha=0.3, label='IQR')
+        if sample_size in (20, 50, 100, 200, 300, 500):
+            # Plot histogram
+            plt.figure(figsize=(14, 10))
+            n, bins, patches = plt.hist(sample_data, bins=50, alpha=0.75, density=True)
+            plt.axvline(x=median, color='r', linestyle='--', label='Median')
+            plt.axvline(x=q1, color='g', linestyle='-', label='Q1')
+            plt.axvline(x=q3, color='b', linestyle='-', label='Q3')
+            # Calculate the density
+            bin_maxes = np.maximum.reduceat(n, np.digitize([q1, q3], bins[:-1]) - 1)
+            max_density = max(bin_maxes)
 
-        plt.title(f'Histogram of {len(total_samples)} cumulative random samples from {variable_of_interest}')
-        plt.xlabel(variable_of_interest)
-        plt.ylabel('Frequency')
-        plt.ylim(bottom=0, top=20)
-        plt.xlim(left=0, right=1)
-        plt.grid(True)
-        plt.show()
+            # Shade the IQR region
+            plt.fill_betweenx(np.arange(0, max_density, 0.01), q1, q3, color='grey', alpha=0.3, label='IQR')
+
+            plt.title(f'{len(total_samples)} random samples from {treatment}')
+            plt.xlabel(variable_of_interest)
+            plt.ylabel('Frequency')
+            plt.ylim(bottom=0, top=20)
+            plt.xlim(left=0, right=1)
+            plt.grid(True)
+            plt.show()
 
         print(
             f'Median: {np.median(sample_data)} IQR: {np.percentile(sample_data, 75) - np.percentile(sample_data, 25)}')
@@ -323,6 +340,26 @@ def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col,
         # Break the loop if we have included all available samples
         if remaining_samples <= new_samples_count:
             break
+
+    plt.figure(figsize=(14, 10))
+    ax1 = plt.gca()
+    ax1.scatter(sample_sizes, mean_values, label='Mean', alpha=0.5, color='blue')
+    ax1.scatter(sample_sizes, median_values, label='Median', alpha=0.5, color='orange')
+    ax1.plot(sample_sizes, mean_values, label='Mean', color='blue')
+    ax1.plot(sample_sizes, median_values, label='Median', color='orange')
+    ax1.set_ylabel('Mean, Median % Nuclear Fascin')
+    ax1.set_xlabel('Sample Size')
+    ax2 = ax1.twinx()
+    ax2.scatter(sample_sizes, std_values, label='Standard Deviation', alpha=0.5, color='gray')
+    ax2.scatter(sample_sizes, iqr_values, label='IQR', alpha=0.5, color='purple')
+    ax2.plot(sample_sizes, std_values, label='Standard Deviation', color='gray')
+    ax2.plot(sample_sizes, iqr_values, label='IQR', color='purple')
+    ax2.set_ylabel('SD, IQR of % Nuclear Fascin')
+    # Create a single legend
+    lines, labels = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax2.legend(lines + lines2, labels + labels2, loc='upper center', bbox_to_anchor=(0.5, 1.15), ncol=4)
+    plt.show()
 
 
 # Assuming you have a dataframe 'df' loaded with the column 'your_column_name',
