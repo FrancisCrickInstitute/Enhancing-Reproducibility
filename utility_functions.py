@@ -22,10 +22,12 @@ def normalize_well_format(well):
 
 
 def load_and_prepare_data(file_path, plate_number):
-    df = pd.read_csv(file_path)
-    df = df[df['Plate'] == plate_number]
-    df['Control Type'] = df['Control Type'].fillna('Treated').replace('', 'Treated')
-    df['Well'] = df['Well'].apply(normalize_well_format)
+    df = (pd.read_csv(file_path).query('Plate == @plate_number').assign(
+        **{
+            'Control Type': lambda x: x['Control Type'].fillna('Treated').replace('', 'Treated'),
+            'Well': lambda x: x['Well'].apply(normalize_well_format)
+        }
+    ))
     return df
 
 
