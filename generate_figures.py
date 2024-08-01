@@ -33,61 +33,25 @@ treatments = annotations.set_index('Well')['Control Type'].to_dict()
 data_subset = prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds, compounds,
                            ['J05', 'O02', 'E22', 'L08'])
 
-# data_subset.to_csv('./all_data.csv')
+# FIGURE 2 A - F
+for s in [50, 200]:
+    for i in range(3):
+        generate_swarmplot(14, 10, 1, 1, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
+                           1, s, data_subset, color_dict, treatment_col, variable_of_interest, dunn_pairs,
+                           treatments_to_compounds, '$ \\log \\left[ \\frac {I_{F_N}}{(I_{F_N} + I_{C_N})} \\right]$')
 
-# # FIGURE 1
-# generate_swarmplot(14, 10, 1, 1, ['Untreated', 'SN0212398523'], 1, -1,
-#                    data_subset[data_subset['Well'].isin(['J05', 'E22'])], color_dict, treatment_col,
-#                    variable_of_interest, [dunn_pairs[3]], treatments_to_compounds)
-#
-# # FIGURE 2
-# generate_swarmplot(14, 10, 1, 1, ['Untreated', 'DMSO', 'SN0212398523'], 1, -1,
-#                    data_subset[data_subset['Well'].isin(['J05', 'O02', 'E22'])], color_dict, treatment_col,
-#                    variable_of_interest, [dunn_pairs[0], dunn_pairs[1], dunn_pairs[3]], treatments_to_compounds)
-#
-# # FIGURE 3
-# generate_swarmplot(14, 10, 1, 1, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
-#                    1, -1, data_subset, color_dict, treatment_col, variable_of_interest, dunn_pairs,
-#                    treatments_to_compounds)
-#
-# # TABLE 1
-# generate_table(data_subset)
-#
-# FIGURE 4
-# plot_mean_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, variable_of_interest)
+# FIGURE 2 G - I
+plot_effect_size_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, variable_of_interest,
+                               'Effect Size', ['SN0212398523', 'DMSO', 'Leptomycin b'])
 
-# plot_effect_size_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, variable_of_interest,
-#                                'Effect Size', ['SN0212398523', 'DMSO', 'Leptomycin b'])
-#
-# # FIGURE 5
-# plot_p_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, variable_of_interest, dunn_pairs)
-#
-# # FIGURE 6
-# generate_swarmplot(28, 20, 2, 2, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
-#                    4, 50, data_subset, color_dict, treatment_col, variable_of_interest, dunn_pairs,
-#                    treatments_to_compounds)
-#
-# # FIGURE 7
-# generate_swarmplot(28, 20, 2, 2, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
-#                    4, 100, data_subset, color_dict, treatment_col, variable_of_interest, dunn_pairs,
-#                    treatments_to_compounds)
-#
-# # FIGURE 8
-# generate_swarmplot(28, 20, 2, 2, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
-#                    4, 250, data_subset, color_dict, treatment_col, variable_of_interest, dunn_pairs,
-#                    treatments_to_compounds)
-#
-# # FIGURE 9
-# for i in range(4):
-#     generate_swarmplot(14, 10, 1, 1, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
-#                        1, 200, data_subset, color_dict, treatment_col, variable_of_interest, dunn_pairs,
-#                        treatments_to_compounds,
-#                        '$ \\log \\left[ \\frac {I_{F_N}}{(I_{F_N} + I_{C_N})} \\right]$')
+# FIGURE 3 A
+plot_iqr_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, variable_of_interest,
+                       'Error in Inter-Quartile Range')
 
-# plot_iqr_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, variable_of_interest, 'Error in Inter-Quartile Range')
-#
-# plot_cumulative_histogram_samples(data_subset, variable_of_interest, treatment_col, 'Untreated')
+# FIGURE 3 B - H
+plot_cumulative_histogram_samples(data_subset, variable_of_interest, treatment_col, 'Untreated')
 
+# FIGURE 4 A
 generate_swarmplot_of_well_means(24, 10,
                                  ['Untreated', 'DMSO', 'SN0212398523', 'SN1054616339', 'SN0022071220', 'Leptomycin b'],
                                  ['Untreated', 'DMSO', 'SN0212398523', 'SN1054616339', 'SN0022071220', 'Leptomycin b'],
