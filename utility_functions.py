@@ -32,19 +32,12 @@ def load_and_prepare_data(file_path, plate_number):
 
 
 def download_csv(file_path, url):
-    # Check if the file already exists
     if not os.path.exists(file_path):
-        print(f"File not found. Downloading from {url}")
-
-        # Make a request to the URL
         response = requests.get(url)
-
-        # Check if the request was successful
         if response.status_code == 200:
-            # Write the content to a file
             with open(file_path, 'wb') as file:
                 file.write(response.content)
-            print("File downloaded successfully.")
+            print(f"File downloaded successfully: {file_path}")
         else:
             print(f"Failed to download the file. Status code: {response.status_code}")
     else:
@@ -56,24 +49,27 @@ def prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_comp
     nuc_data = nuc_data.rename(columns=lambda x: 'Nuclear_' + x if 'Intensity' in x else x)
     cyto_data = cyto_data.rename(columns=lambda x: 'Cyto_' + x if 'Intensity' in x else x)
 
-    # Merge data
-    combined_data = pd.merge(pd.merge(nuc_data, cyto_data, on=['ImageNumber', 'ObjectNumber'], how='left'), image_data,
-                             on='ImageNumber', how='left')
+    # Merge data on ImageNumber and ObjectNumber
+    combined_data = nuc_data.merge(cyto_data, on=['ImageNumber', 'ObjectNumber'], how='left')
+    combined_data = combined_data.merge(image_data, on='ImageNumber', how='left')
 
-    # Calculate ratios
+    # Calculate ratios for Fascin and NuclearActin
     for compartment in ['Fascin', 'NuclearActin']:
-        combined_data[f'{compartment}_Ratio'] = combined_data[f'Nuclear_Intensity_MeanIntensity_{compartment}'] / (
-                combined_data[f'Cyto_Intensity_MeanIntensity_{compartment}'] + combined_data[
-            f'Nuclear_Intensity_MeanIntensity_{compartment}'])
+        combined_data[f'{compartment}_Ratio'] = (
+                combined_data[f'Nuclear_Intensity_MeanIntensity_{compartment}'] /
+                (combined_data[f'Cyto_Intensity_MeanIntensity_{compartment}'] +
+                 combined_data[f'Nuclear_Intensity_MeanIntensity_{compartment}'])
+        )
 
     # Extract well information and map treatments
     combined_data['Well'] = combined_data['FileName_DNA'].str.extract(r'_(.*?)_')[0]
     combined_data = map_wells_to_treatments(combined_data, treatments, treatments_to_compounds, compounds)
-    if len(selected_wells) > 0:
-        selected_wells_data = combined_data[combined_data['Well'].isin(selected_wells)]
-    else:
-        selected_wells_data = combined_data
-    return selected_wells_data.sort_values(by=['Treatment', 'Well'])
+
+    # Filter by selected wells if specified
+    if selected_wells:
+        combined_data = combined_data[combined_data['Well'].isin(selected_wells)]
+
+    return combined_data.sort_values(by=['Treatment', 'Well'])
 
 
 def map_wells_to_treatments(data, treatments, treatments_to_compounds, compounds):
