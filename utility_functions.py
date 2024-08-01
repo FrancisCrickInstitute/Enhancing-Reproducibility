@@ -17,11 +17,8 @@ def exp_decay(x, a, b, c):
 
 
 def normalize_well_format(well):
-    match = re.match(r"([A-Za-z])([0-9]+)", well, re.I)
-    if match:
-        items = match.groups()
-        return f"{items[0]}{int(items[1]):02d}"
-    return well
+    match = re.match(r"([A-Za-z])([0-9]+)", well)
+    return f"{match[1]}{int(match[2]):02d}" if match else well
 
 
 def load_and_prepare_data(file_path, plate_number):
