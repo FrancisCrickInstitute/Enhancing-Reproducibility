@@ -73,11 +73,19 @@ def prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_comp
 
 
 def map_wells_to_treatments(data, treatments, treatments_to_compounds, compounds):
+    # Map wells to treatment names and then to compound names
     data['Treatment'] = data['Well'].map(treatments).map(treatments_to_compounds)
-    tdata = data[data['Treatment'] == 'Treated']
-    odata = data[data['Treatment'] != 'Treated']
-    tdata['Treatment'] = tdata['Well'].map(compounds)
-    return pd.concat([tdata, odata])
+
+    # Handle cases where the treatment is 'Treated' differently
+    treated_mask = data['Treatment'] == 'Treated'
+
+    # Update the 'Treatment' column for treated data
+    data.loc[treated_mask, 'Treatment'] = data.loc[treated_mask, 'Well'].map(compounds)
+
+    # Fill any missing values with 'Unknown' or another appropriate default
+    data['Treatment'] = data['Treatment'].fillna('Unknown')
+
+    return data
 
 
 def generate_swarmplot(fig_width, fig_height, plot_rows, plot_cols, plot_order, n_samples, sample_size, data,
