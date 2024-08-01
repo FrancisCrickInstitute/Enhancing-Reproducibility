@@ -52,7 +52,7 @@ def download_csv(file_path, url):
         print("File already exists.")
 
 
-def prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds, selected_wells):
+def prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds, compounds, selected_wells):
     # Rename columns
     nuc_data = nuc_data.rename(columns=lambda x: 'Nuclear_' + x if 'Intensity' in x else x)
     cyto_data = cyto_data.rename(columns=lambda x: 'Cyto_' + x if 'Intensity' in x else x)
@@ -69,14 +69,25 @@ def prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_comp
 
     # Extract well information and map treatments
     combined_data['Well'] = combined_data['FileName_DNA'].str.extract(r'_(.*?)_')[0]
-    combined_data['Treatment'] = combined_data['Well'].map(treatments).map(treatments_to_compounds)
-    selected_wells_data = combined_data[combined_data['Well'].isin(selected_wells)]
+    combined_data = map_wells_to_treatments(combined_data, treatments, treatments_to_compounds, compounds)
+    if len(selected_wells) > 0:
+        selected_wells_data = combined_data[combined_data['Well'].isin(selected_wells)]
+    else:
+        selected_wells_data = combined_data
     return selected_wells_data.sort_values(by=['Treatment', 'Well'])
+
+
+def map_wells_to_treatments(data, treatments, treatments_to_compounds, compounds):
+    data['Treatment'] = data['Well'].map(treatments).map(treatments_to_compounds)
+    tdata = data[data['Treatment'] == 'Treated']
+    odata = data[data['Treatment'] != 'Treated']
+    tdata['Treatment'] = tdata['Well'].map(compounds)
+    return pd.concat([tdata, odata])
 
 
 def generate_swarmplot(fig_width, fig_height, plot_rows, plot_cols, plot_order, n_samples, sample_size, data,
                        color_dict, treatment_col, variable_of_interest, dunn_pairs, treatments_to_compounds, y_label):
-    dunn_p_values = {pair: [[] for _ in range(n_samples)] for pair in dunn_pairs}
+    # dunn_p_values = {pair: [[] for _ in range(n_samples)] for pair in dunn_pairs}
 
     plt.figure(num=1, figsize=(fig_width, fig_height))
 
@@ -98,67 +109,67 @@ def generate_swarmplot(fig_width, fig_height, plot_rows, plot_cols, plot_order, 
 
         ax = plt.subplot(plot_rows, plot_cols, sample_index + 1)
 
-        sns.swarmplot(x=treatment_col, y=variable_of_interest, data=sampled_data, order=plot_order, palette=color_dict,
-                      hue=treatment_col, size=2.75, alpha=0.9, ax=ax)
         sns.boxplot(x=treatment_col, y=variable_of_interest, data=sampled_data, order=plot_order, color='white',
-                    showfliers=False, ax=ax)
-
+                    showfliers=False, ax=ax, linecolor='black', linewidth=2)
+        sns.swarmplot(x=treatment_col, y=variable_of_interest, data=sampled_data, order=plot_order, palette=color_dict,
+                      hue=treatment_col, size=5, alpha=0.9, ax=ax)
         plt.ylabel(y_label)
         plt.xlabel('')
+        plt.ylim(bottom=0, top=1.0)
 
-        _, p_value = stats.kruskal(
-            *(sampled_data[sampled_data[treatment_col] == t][variable_of_interest] for t in
-              sampled_data[treatment_col].unique()))
+        # _, p_value = stats.kruskal(
+        #     *(sampled_data[sampled_data[treatment_col] == t][variable_of_interest] for t in
+        #       sampled_data[treatment_col].unique()))
+        #
+        # if p_value < 0.05:
+        #     dunn_result = sp.posthoc_dunn(sampled_data, val_col=variable_of_interest, group_col=treatment_col)
+        #     for pair in dunn_pairs:
+        #         dunn_p_values[pair][sample_index].append(dunn_result.loc[pair[0], pair[1]])
+        # else:
+        #     for pair in dunn_pairs:
+        #         dunn_p_values[pair][sample_index].append(np.nan)
 
-        if p_value < 0.05:
-            dunn_result = sp.posthoc_dunn(sampled_data, val_col=variable_of_interest, group_col=treatment_col)
-            for pair in dunn_pairs:
-                dunn_p_values[pair][sample_index].append(dunn_result.loc[pair[0], pair[1]])
-        else:
-            for pair in dunn_pairs:
-                dunn_p_values[pair][sample_index].append(np.nan)
+        # y, h, col = sampled_data[variable_of_interest].max() + 0.02, 0.02, 'black'
 
-        y, h, col = sampled_data[variable_of_interest].max() + 0.02, 0.02, 'black'
+        # ymax = []
+        # for t in range(len(treatments_to_compounds) - 1):
+        #     ymax.append(0)
+        #
+        # for pair in dunn_pairs:
+        #     x1, x2 = pair
+        #     x1 = [label.get_text() for label in ax.get_xticklabels()].index(x1)
+        #     x2 = [label.get_text() for label in ax.get_xticklabels()].index(x2)
+        #
+        #     y = sampled_data[sampled_data[treatment_col].isin(pair)].loc[:, variable_of_interest].max() + 0.02
+        #
+        #     for x in range(min(x1, x2), max(x1, x2)):
+        #         if y <= ymax[x] + 0.075:
+        #             y = ymax[x] + 0.075
+        #         ymax[x] = y
+        #
+        #     if x1 < x2:
+        #         x1 += 0.02
+        #         x2 -= 0.02
+        #     else:
+        #         x1 -= 0.02
+        #         x2 += 0.02
 
-        ymax = []
-        for t in range(len(treatments_to_compounds) - 1):
-            ymax.append(0)
+        # Draw line
+        # plt.plot([x1, x1, x2, x2], [y, y + h, y + h, y], lw=1.5, c=col)
 
-        for pair in dunn_pairs:
-            x1, x2 = pair
-            x1 = [label.get_text() for label in ax.get_xticklabels()].index(x1)
-            x2 = [label.get_text() for label in ax.get_xticklabels()].index(x2)
+        # raw_p_value = dunn_p_values[pair][sample_index][0]
+        # str_p_value = f'p = {raw_p_value:.2e}'
+        # if raw_p_value < 0.0001:
+        #     str_p_value = 'p < 0.0001'
+        # elif raw_p_value < 0.001:
+        #     str_p_value = 'p < 0.001'
+        # elif raw_p_value < 0.01:
+        #     str_p_value = 'p < 0.01'
+        # elif raw_p_value < 0.05:
+        #     str_p_value = 'p < 0.05'
 
-            y = sampled_data[sampled_data[treatment_col].isin(pair)].loc[:, variable_of_interest].max() + 0.02
-
-            for x in range(min(x1, x2), max(x1, x2)):
-                if y <= ymax[x] + 0.075:
-                    y = ymax[x] + 0.075
-                ymax[x] = y
-
-            if x1 < x2:
-                x1 += 0.02
-                x2 -= 0.02
-            else:
-                x1 -= 0.02
-                x2 += 0.02
-
-            # Draw line
-            plt.plot([x1, x1, x2, x2], [y, y + h, y + h, y], lw=1.5, c=col)
-
-            raw_p_value = dunn_p_values[pair][sample_index][0]
-            str_p_value = f'p = {raw_p_value:.2e}'
-            # if raw_p_value < 0.0001:
-            #     str_p_value = 'p < 0.0001'
-            # elif raw_p_value < 0.001:
-            #     str_p_value = 'p < 0.001'
-            # elif raw_p_value < 0.01:
-            #     str_p_value = 'p < 0.01'
-            # elif raw_p_value < 0.05:
-            #     str_p_value = 'p < 0.05'
-
-            # Annotate line with p-value
-            plt.text((x1 + x2) * .5, y + h, str_p_value, ha='center', va='bottom', color=col, fontsize=20)
+        # Annotate line with p-value
+        # plt.text((x1 + x2) * .5, y + h, str_p_value, ha='center', va='bottom', color=col, fontsize=20)
 
     plt.savefig(f'./outputs/plots/selected_wells_{sample_size:03}.png', format='png', bbox_inches='tight')
     plt.show()
@@ -229,6 +240,43 @@ def plot_mean_v_sample_size(sample_sizes, num_iterations, data, treatment_col, v
     plt.ylabel(y_label)
     plt.legend(fontsize=20)
     plt.show()
+
+
+def plot_effect_size_v_sample_size(sample_sizes, num_iterations, data, treatment_col, variable_of_interest, y_label,
+                                   treatments):
+    # Initialize dictionaries to store multiple mean values per sample size for each treatment
+    mean_values = {treatment: [[] for _ in range(len(sample_sizes))] for treatment in data[treatment_col].unique()}
+    for sample_size_index, sample_size in enumerate(sample_sizes):
+        for _ in range(num_iterations):
+            combined_data = pd.DataFrame()
+            for treatment in treatments:
+                subsample = data[data[treatment_col] == treatment].sample(n=sample_size, replace=False)
+                control_subsample = data[data[treatment_col] == 'Untreated'].sample(n=sample_size, replace=False)
+                mean = subsample[variable_of_interest].mean() - control_subsample[variable_of_interest].mean()
+                mean_values[treatment][sample_size_index].append(mean)
+                combined_data = pd.concat([combined_data, subsample])
+
+    # Calculate the mean, minimum, and maximum for the mean values
+    median_values_mean = {treatment: np.nanmedian(mean_values[treatment], axis=1) for treatment in
+                          data[treatment_col].unique()}
+    mean_values_25th = {treatment: np.nanpercentile(mean_values[treatment], 25, axis=1) for treatment in
+                        data[treatment_col].unique()}
+    mean_values_75th = {treatment: np.nanpercentile(mean_values[treatment], 75, axis=1) for treatment in
+                        data[treatment_col].unique()}
+
+    # Plotting the mean Fascin_Ratio for each treatment with uncertainty ranges
+
+    for t in range(len(treatments)):
+        plt.figure(figsize=(15, 10))
+        for treatment in treatments[:t + 1]:
+            plt.plot(sample_sizes, median_values_mean[treatment], label=treatment)
+            plt.fill_between(sample_sizes, mean_values_25th[treatment], mean_values_75th[treatment], alpha=0.2)
+
+        plt.xlabel('Sample Size')
+        plt.ylabel(y_label)
+        plt.legend(fontsize=20)
+        plt.axhline(y=0.0, color='black', linestyle='dotted')
+        plt.show()
 
 
 def plot_iqr_v_sample_size(sample_sizes, num_iterations, data, treatment_col, variable_of_interest, y_label):
@@ -343,15 +391,15 @@ def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col,
 
     plt.figure(figsize=(14, 10))
     ax1 = plt.gca()
-    ax1.scatter(sample_sizes, mean_values, label='Mean', alpha=0.5, color='blue')
-    ax1.scatter(sample_sizes, median_values, label='Median', alpha=0.5, color='orange')
+    ax1.scatter(sample_sizes, mean_values, label='_Mean', alpha=0.5, color='blue')
+    ax1.scatter(sample_sizes, median_values, label='_Median', alpha=0.5, color='orange')
     ax1.plot(sample_sizes, mean_values, label='Mean', color='blue')
     ax1.plot(sample_sizes, median_values, label='Median', color='orange')
     ax1.set_ylabel('Mean, Median % Nuclear Fascin')
     ax1.set_xlabel('Sample Size')
     ax2 = ax1.twinx()
-    ax2.scatter(sample_sizes, std_values, label='Standard Deviation', alpha=0.5, color='gray')
-    ax2.scatter(sample_sizes, iqr_values, label='IQR', alpha=0.5, color='purple')
+    ax2.scatter(sample_sizes, std_values, label='_Standard Deviation', alpha=0.5, color='gray')
+    ax2.scatter(sample_sizes, iqr_values, label='_IQR', alpha=0.5, color='purple')
     ax2.plot(sample_sizes, std_values, label='Standard Deviation', color='gray')
     ax2.plot(sample_sizes, iqr_values, label='IQR', color='purple')
     ax2.set_ylabel('SD, IQR of % Nuclear Fascin')
@@ -411,4 +459,30 @@ def plot_p_v_sample_size(sample_sizes, num_iterations, data, treatment_col, vari
     plt.ylabel('Dunn Test P-Value')
     plt.axhline(y=0.05, color='red', linestyle='dotted', label='p = 0.05')
     plt.legend(fontsize=20)
+    plt.show()
+
+
+def generate_swarmplot_of_well_means(fig_width, fig_height, plot_order, treatments, data, color_dict, treatment_col,
+                                     variable_of_interest, y_label):
+    # treatments = data[treatment_col].unique()
+    mean_data = pd.DataFrame()
+
+    for t in treatments:
+        tdata = data[data[treatment_col] == t]
+        wells = tdata['Well'].unique()
+        if len(wells) > 3:
+            wells = np.random.choice(wells, 3)
+        for w in wells:
+            tmean = np.mean(tdata[tdata['Well'] == w][variable_of_interest])
+            mean_data = pd.concat([mean_data,
+                                   pd.DataFrame(data=[[t, tmean]],
+                                                columns=['TREATMENT', 'MEAN_FASCIN_RATIO'])])
+
+    plt.figure(num=1, figsize=(fig_width, fig_height))
+    sns.boxplot(x='TREATMENT', y='MEAN_FASCIN_RATIO', data=mean_data, order=plot_order, color='white',
+                showfliers=False, linecolor='black', linewidth=2)
+    sns.swarmplot(x='TREATMENT', y='MEAN_FASCIN_RATIO', data=mean_data, order=plot_order, palette=color_dict,
+                  hue='TREATMENT', size=20, alpha=0.9)
+    plt.ylabel(y_label)
+    plt.xlabel('')
     plt.show()
