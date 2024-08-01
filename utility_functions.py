@@ -89,91 +89,52 @@ def map_wells_to_treatments(data, treatments, treatments_to_compounds, compounds
 
 
 def generate_swarmplot(fig_width, fig_height, plot_rows, plot_cols, plot_order, n_samples, sample_size, data,
-                       color_dict, treatment_col, variable_of_interest, dunn_pairs, treatments_to_compounds, y_label):
-    # dunn_p_values = {pair: [[] for _ in range(n_samples)] for pair in dunn_pairs}
+                       color_dict, treatment_col, variable_of_interest, y_label):
+    """
+    Generates and saves swarm plots for the variable of interest across different treatments.
 
-    plt.figure(num=1, figsize=(fig_width, fig_height))
+    Parameters:
+    - fig_width, fig_height: Dimensions of the figure.
+    - plot_rows, plot_cols: Number of rows and columns in the subplot grid.
+    - plot_order: Order in which treatments are displayed on the x-axis.
+    - n_samples: Number of sample groups to plot.
+    - sample_size: Number of samples to take per treatment (if > 0).
+    - data: DataFrame containing the data.
+    - color_dict: Dictionary mapping treatments to colors for the plot.
+    - treatment_col: Column name indicating the treatment type in the data.
+    - variable_of_interest: The dependent variable to be plotted.
+    - y_label: Label for the y-axis.
+    """
 
-    for sample_index, _ in enumerate(range(n_samples)):
-        if sample_size > 0:
-            untreated_data = data[data['Treatment'] == 'Untreated'].sample(n=sample_size, replace=False)
-            dmso_data = data[data['Treatment'] == 'DMSO'].sample(n=sample_size, replace=False)
-            treated_data = data[data['Treatment'] == 'SN0212398523'].sample(n=sample_size, replace=False)
-            stim_data = data[data['Treatment'] == 'Leptomycin b'].sample(n=sample_size, replace=False)
+    plt.figure(figsize=(fig_width, fig_height))
 
-            sampled_data = pd.concat([untreated_data, dmso_data, treated_data, stim_data])
-            untreated_data.to_csv(f'./outputs/data/untreated_raw_data_{sample_size:03}_{sample_index:01}.csv',
-                                  index=False)
-            dmso_data.to_csv(f'./outputs/data/dmso_data_{sample_size:03}_{sample_index:01}.csv', index=False)
-            treated_data.to_csv(f'./outputs/data/treated_data_{sample_size:03}_{sample_index:01}.csv', index=False)
-            stim_data.to_csv(f'./outputs/data/stim_data_{sample_size:03}_{sample_index:01}.csv', index=False)
-        else:
-            sampled_data = data
+    # Sample the data if sample_size > 0
+    if sample_size > 0:
+        sampled_data = pd.concat([
+            data[data[treatment_col] == 'Untreated'].sample(n=sample_size, replace=False),
+            data[data[treatment_col] == 'DMSO'].sample(n=sample_size, replace=False),
+            data[data[treatment_col] == 'SN0212398523'].sample(n=sample_size, replace=False),
+            data[data[treatment_col] == 'Leptomycin b'].sample(n=sample_size, replace=False)
+        ])
 
+        # Save sampled data if needed (optional)
+        for sample_index in range(n_samples):
+            sampled_data.to_csv(f'./outputs/data/sampled_data_{sample_size:03}_{sample_index:01}.csv', index=False)
+    else:
+        sampled_data = data
+
+    # Plot the data
+    for sample_index in range(n_samples):
         ax = plt.subplot(plot_rows, plot_cols, sample_index + 1)
-
         sns.boxplot(x=treatment_col, y=variable_of_interest, data=sampled_data, order=plot_order, color='white',
-                    showfliers=False, ax=ax, linecolor='black', linewidth=2)
+                    showfliers=False, ax=ax, linewidth=2)
         sns.swarmplot(x=treatment_col, y=variable_of_interest, data=sampled_data, order=plot_order, palette=color_dict,
                       hue=treatment_col, size=5, alpha=0.9, ax=ax)
-        plt.ylabel(y_label)
-        plt.xlabel('')
-        plt.ylim(bottom=0, top=1.0)
+        ax.set_ylabel(y_label)
+        ax.set_xlabel('')
+        ax.set_ylim(bottom=0, top=1.0)
 
-        # _, p_value = stats.kruskal(
-        #     *(sampled_data[sampled_data[treatment_col] == t][variable_of_interest] for t in
-        #       sampled_data[treatment_col].unique()))
-        #
-        # if p_value < 0.05:
-        #     dunn_result = sp.posthoc_dunn(sampled_data, val_col=variable_of_interest, group_col=treatment_col)
-        #     for pair in dunn_pairs:
-        #         dunn_p_values[pair][sample_index].append(dunn_result.loc[pair[0], pair[1]])
-        # else:
-        #     for pair in dunn_pairs:
-        #         dunn_p_values[pair][sample_index].append(np.nan)
-
-        # y, h, col = sampled_data[variable_of_interest].max() + 0.02, 0.02, 'black'
-
-        # ymax = []
-        # for t in range(len(treatments_to_compounds) - 1):
-        #     ymax.append(0)
-        #
-        # for pair in dunn_pairs:
-        #     x1, x2 = pair
-        #     x1 = [label.get_text() for label in ax.get_xticklabels()].index(x1)
-        #     x2 = [label.get_text() for label in ax.get_xticklabels()].index(x2)
-        #
-        #     y = sampled_data[sampled_data[treatment_col].isin(pair)].loc[:, variable_of_interest].max() + 0.02
-        #
-        #     for x in range(min(x1, x2), max(x1, x2)):
-        #         if y <= ymax[x] + 0.075:
-        #             y = ymax[x] + 0.075
-        #         ymax[x] = y
-        #
-        #     if x1 < x2:
-        #         x1 += 0.02
-        #         x2 -= 0.02
-        #     else:
-        #         x1 -= 0.02
-        #         x2 += 0.02
-
-        # Draw line
-        # plt.plot([x1, x1, x2, x2], [y, y + h, y + h, y], lw=1.5, c=col)
-
-        # raw_p_value = dunn_p_values[pair][sample_index][0]
-        # str_p_value = f'p = {raw_p_value:.2e}'
-        # if raw_p_value < 0.0001:
-        #     str_p_value = 'p < 0.0001'
-        # elif raw_p_value < 0.001:
-        #     str_p_value = 'p < 0.001'
-        # elif raw_p_value < 0.01:
-        #     str_p_value = 'p < 0.01'
-        # elif raw_p_value < 0.05:
-        #     str_p_value = 'p < 0.05'
-
-        # Annotate line with p-value
-        # plt.text((x1 + x2) * .5, y + h, str_p_value, ha='center', va='bottom', color=col, fontsize=20)
-
+    plt.tight_layout()
     plt.savefig(f'./outputs/plots/selected_wells_{sample_size:03}.png', format='png', bbox_inches='tight')
     plt.show()
 

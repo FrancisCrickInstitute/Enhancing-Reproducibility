@@ -37,8 +37,8 @@ data_subset = prepare_data(nuc_data, cyto_data, image_data, treatments, treatmen
 for s in [50, 200]:
     for i in range(3):
         generate_swarmplot(14, 10, 1, 1, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
-                           1, s, data_subset, color_dict, treatment_col, variable_of_interest, dunn_pairs,
-                           treatments_to_compounds, '$ \\log \\left[ \\frac {I_{F_N}}{(I_{F_N} + I_{C_N})} \\right]$')
+                           1, s, data_subset, color_dict, treatment_col, variable_of_interest,
+                           '$ \\log \\left[ \\frac {I_{F_N}}{(I_{F_N} + I_{C_N})} \\right]$')
 
 # FIGURE 2 G - I
 plot_effect_size_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, variable_of_interest,
