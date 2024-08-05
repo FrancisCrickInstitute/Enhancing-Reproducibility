@@ -6,8 +6,8 @@ plate_number = 1093711385
 treatment_col = 'Treatment'
 variable_of_interest = 'Fascin_Ratio'
 dunn_pairs = [('Untreated', 'DMSO'), ('DMSO', 'SN0212398523'), ('SN0212398523', 'Leptomycin b'),
-              ('Untreated', 'SN0212398523')]
-color_dict = {'SN0022071220': 'red', 'SN1054616339': 'yellow', 'SN0212398523': 'orange', 'Untreated': 'blue',
+              ('Untreated', 'SN0212398523'), ('Untreated', 'Leptomycin b'), ('DMSO', 'Leptomycin b')]
+color_dict = {'SN1066932540': 'red', 'SN1054616339': 'yellow', 'SN0212398523': 'orange', 'Untreated': 'blue',
               'DMSO': 'gray',
               'Leptomycin b': 'purple'}
 
@@ -33,30 +33,40 @@ treatments = annotations.set_index('Well')['Control Type'].to_dict()
 data_subset = prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds, compounds,
                            ['J05', 'O02', 'E22', 'L08'])
 
-# FIGURE 2 A - F
-for s in [50, 200]:
-    for i in range(3):
-        generate_swarmplot(14, 10, 1, 1, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
-                           1, s, data_subset, color_dict, treatment_col, variable_of_interest,
-                           '$ \\log \\left[ \\frac {I_{F_N}}{(I_{F_N} + I_{C_N})} \\right]$')
-
-# FIGURE 2 G - I
-plot_effect_size_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, variable_of_interest,
-                               'Effect Size', ['SN0212398523', 'DMSO', 'Leptomycin b'])
-
-# FIGURE 3 A
-plot_iqr_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, variable_of_interest,
-                       'Error in Inter-Quartile Range')
-
-# FIGURE 3 B - H
-plot_cumulative_histogram_samples(data_subset, variable_of_interest, treatment_col, 'Untreated')
+# # FIGURE 2 A - F
+# for s in [50, 200]:
+#     for i in range(3):
+#         generate_swarmplot(14, 10, 1, 1, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
+#                            1, s, data_subset, color_dict, treatment_col, variable_of_interest,
+#                            '$ \\log \\left[ \\frac {I_{F_N}}{(I_{F_N} + I_{C_N})} \\right]$')
+#
+# # FIGURE 2 G - I
+# plot_effect_size_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, variable_of_interest,
+#                                'Effect Size', ['SN0212398523', 'DMSO', 'Leptomycin b'])
+#
+# # FIGURE 3 A
+# plot_iqr_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, variable_of_interest,
+#                        'Error in Inter-Quartile Range')
+#
+# # FIGURE 3 B - H
+# plot_cumulative_histogram_samples(data_subset, variable_of_interest, treatment_col, 'Untreated')
 
 # FIGURE 4 A
-generate_swarmplot_of_well_means(24, 10,
-                                 ['Untreated', 'DMSO', 'SN0212398523', 'SN1054616339', 'SN0022071220', 'Leptomycin b'],
-                                 ['Untreated', 'DMSO', 'SN0212398523', 'SN1054616339', 'SN0022071220', 'Leptomycin b'],
-                                 prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds,
-                                              compounds, []), color_dict, treatment_col, variable_of_interest,
-                                 '$ \\log \\left[ \\frac {I_{F_N}}{(I_{F_N} + I_{C_N})} \\right]$')
+for s in [50, 200, 500, -1]:
+    generate_swarmplot_of_well_means(24, 10,
+                                     ['Untreated', 'DMSO', 'SN0212398523', 'SN1054616339', 'SN1066932540',
+                                      'Leptomycin b'],
+                                     ['Untreated', 'DMSO', 'SN0212398523', 'SN1054616339', 'SN1066932540',
+                                      'Leptomycin b'],
+                                     prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds,
+                                                  compounds,
+                                                  ['J05', 'I19', 'G15', 'O02', 'B02', 'N12', 'L08', 'L18', 'H13', 'E22',
+                                                   'H10', 'B06']), color_dict, treatment_col, variable_of_interest,
+                                     '$ \\log \\left[ \\frac {I_{F_N}}{(I_{F_N} + I_{C_N})} \\right]$', dunn_pairs, s)
 
 print('All Done!')
+
+#                                      ['Untreated', 'DMSO', 'SN0212398523', 'SN1054616339', 'SN0022071220',
+#                                       'Leptomycin b'],
+#                                      ['Untreated', 'DMSO', 'SN0212398523', 'SN1054616339', 'SN0022071220',
+#                                       'Leptomycin b'],

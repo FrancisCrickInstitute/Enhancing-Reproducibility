@@ -346,8 +346,8 @@ def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col,
             plt.grid(True)
             plt.show()
 
-        print(
-            f'Median: {np.median(sample_data)} IQR: {np.percentile(sample_data, 75) - np.percentile(sample_data, 25)}')
+        # print(
+        #     f'Median: {np.median(sample_data)} IQR: {np.percentile(sample_data, 75) - np.percentile(sample_data, 25)}')
 
         # Break the loop if we have included all available samples
         if remaining_samples <= new_samples_count:
@@ -427,26 +427,77 @@ def plot_p_v_sample_size(sample_sizes, num_iterations, data, treatment_col, vari
 
 
 def generate_swarmplot_of_well_means(fig_width, fig_height, plot_order, treatments, data, color_dict, treatment_col,
-                                     variable_of_interest, y_label):
+                                     variable_of_interest, y_label, dunn_pairs, sample_size):
     # treatments = data[treatment_col].unique()
     mean_data = pd.DataFrame()
+    dunn_p_values = {pair: [] for pair in dunn_pairs}
+    plt.figure(num=1, figsize=(fig_width, fig_height))
 
     for t in treatments:
         tdata = data[data[treatment_col] == t]
         wells = tdata['Well'].unique()
-        if len(wells) > 3:
-            wells = np.random.choice(wells, 3)
+        # if len(wells) > 3:
+        #     wells = np.random.choice(wells, 3)
         for w in wells:
-            tmean = np.mean(tdata[tdata['Well'] == w][variable_of_interest])
+            if sample_size > 0:
+                sdata = tdata[tdata['Well'] == w].sample(n=sample_size, replace=False)
+            else:
+                sdata = tdata[tdata['Well'] == w]
+            smean = np.mean(sdata[variable_of_interest])
+            print(f'Treatment: {t} Well: {w} Mean: {smean}')
             mean_data = pd.concat([mean_data,
-                                   pd.DataFrame(data=[[t, tmean]],
+                                   pd.DataFrame(data=[[t, smean]],
                                                 columns=['TREATMENT', 'MEAN_FASCIN_RATIO'])])
 
-    plt.figure(num=1, figsize=(fig_width, fig_height))
+    # ax = plt.subplot(1, 1, 1)
     sns.boxplot(x='TREATMENT', y='MEAN_FASCIN_RATIO', data=mean_data, order=plot_order, color='white',
                 showfliers=False, linecolor='black', linewidth=2)
     sns.swarmplot(x='TREATMENT', y='MEAN_FASCIN_RATIO', data=mean_data, order=plot_order, palette=color_dict,
-                  hue='TREATMENT', size=20, alpha=0.9)
+                  hue='TREATMENT', size=18, alpha=0.8)
     plt.ylabel(y_label)
     plt.xlabel('')
+    plt.ylim(bottom=0.42, top=0.60)
+    plt.title(f'Each dot represents the mean of {sample_size} cells')
+
+    # _, p_value = stats.kruskal(
+    #     *(mean_data[mean_data['TREATMENT'] == t]['MEAN_FASCIN_RATIO'] for t in
+    #       mean_data['TREATMENT'].unique()))
+    #
+    # dunn_result = sp.posthoc_dunn(mean_data, val_col='MEAN_FASCIN_RATIO', group_col='TREATMENT')
+    # for pair in dunn_pairs:
+    #     dunn_p_values[pair].append(dunn_result.loc[pair[0], pair[1]])
+    #
+    # y, h, col = mean_data['MEAN_FASCIN_RATIO'].max() + 0.005, 0.005, 'black'
+    #
+    # ymax = []
+    # for t in range(len(mean_data['TREATMENT'].unique()) - 1):
+    #     ymax.append(0)
+    #
+    # for pair in dunn_pairs:
+    #     x1, x2 = pair
+    #     x1 = [label.get_text() for label in ax.get_xticklabels()].index(x1)
+    #     x2 = [label.get_text() for label in ax.get_xticklabels()].index(x2)
+    #
+    #     y = mean_data[mean_data['TREATMENT'].isin(pair)].loc[:, 'MEAN_FASCIN_RATIO'].max() + 0.02
+    #
+    #     for x in range(min(x1, x2), max(x1, x2)):
+    #         if y <= ymax[x] + 0.01:
+    #             y = ymax[x] + 0.01
+    #         ymax[x] = y
+    #
+    #     if x1 < x2:
+    #         x1 += 0.02
+    #         x2 -= 0.02
+    #     else:
+    #         x1 -= 0.02
+    #         x2 += 0.02
+    #
+    #     # Draw line
+    #     plt.plot([x1, x1, x2, x2], [y, y + h, y + h, y], lw=1.5, c=col)
+    #
+    #     str_p_value = f'p = {dunn_p_values[pair][0]:.3f}'
+    #
+    #     # Annotate line with p-value
+    #     plt.text((x1 + x2) * .5, y + h, str_p_value, ha='center', va='bottom', color=col, fontsize=20)
+
     plt.show()
