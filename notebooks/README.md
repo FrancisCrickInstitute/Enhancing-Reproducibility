@@ -22,5 +22,5 @@ If this is not the case, please find more instructions [here](https://github.com
 
 ## Open the notebook
 1. In Jupyter lab, use the lefthand tab to navigate to the folder `notebooks`
-2. Open the file name `companion_notebook.ipynb`
+2. Open the file named `companion_notebook.ipynb`
 3. Run cells sequentially to reproduce the figures in the paper
