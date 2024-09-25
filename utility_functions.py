@@ -89,7 +89,7 @@ def map_wells_to_treatments(data, treatments, treatments_to_compounds, compounds
 
 
 def generate_swarmplot(fig_width, fig_height, plot_rows, plot_cols, plot_order, n_samples, sample_size, data,
-                       color_dict, treatment_col, variable_of_interest, y_label):
+                       color_dict, treatment_col, variable_of_interest, y_label, dunn_pairs):
     """
     Generates and saves swarm plots for the variable of interest across different treatments.
 
@@ -107,6 +107,8 @@ def generate_swarmplot(fig_width, fig_height, plot_rows, plot_cols, plot_order, 
     """
 
     plt.figure(figsize=(fig_width, fig_height))
+
+    dunn_p_values = {pair: [] for pair in dunn_pairs}
 
     # Sample the data if sample_size > 0
     if sample_size > 0:
@@ -129,10 +131,56 @@ def generate_swarmplot(fig_width, fig_height, plot_rows, plot_cols, plot_order, 
         sns.boxplot(x=treatment_col, y=variable_of_interest, data=sampled_data, order=plot_order, color='white',
                     showfliers=False, ax=ax, linewidth=2)
         sns.swarmplot(x=treatment_col, y=variable_of_interest, data=sampled_data, order=plot_order, palette=color_dict,
-                      hue=treatment_col, size=5, alpha=0.9, ax=ax)
+                      hue=treatment_col, size=2, alpha=0.9, ax=ax)
         ax.set_ylabel(y_label)
         ax.set_xlabel('')
-        ax.set_ylim(bottom=0, top=1.0)
+        # ax.set_ylim(bottom=0, top=1.1)
+
+        _, p_value = stats.kruskal(
+            *(sampled_data[sampled_data[treatment_col] == t][variable_of_interest] for t in
+              sampled_data[treatment_col].unique()))
+
+        dunn_result = sp.posthoc_dunn(sampled_data, val_col=variable_of_interest, group_col=treatment_col)
+        for pair in dunn_pairs:
+            dunn_p_values[pair].append(dunn_result.loc[pair[0], pair[1]])
+
+        y, h, col = sampled_data[variable_of_interest].max() + 0.005, 0.005, 'black'
+
+        ymax = []
+        for t in range(len(sampled_data[treatment_col].unique()) - 1):
+            ymax.append(0)
+
+        for pair in dunn_pairs:
+            x1, x2 = pair
+            x1 = [label.get_text() for label in ax.get_xticklabels()].index(x1)
+            x2 = [label.get_text() for label in ax.get_xticklabels()].index(x2)
+
+            y = sampled_data[sampled_data[treatment_col].isin(pair)].loc[:, variable_of_interest].max() + 0.02
+
+            for x in range(min(x1, x2), max(x1, x2)):
+                if y <= ymax[x] + 0.05:
+                    y = ymax[x] + 0.05
+                ymax[x] = y
+
+            if x1 < x2:
+                x1 += 0.02
+                x2 -= 0.02
+            else:
+                x1 -= 0.02
+                x2 += 0.02
+
+            # Draw line
+            plt.plot([x1, x1, x2, x2], [y, y + h, y + h, y], lw=1.5, c=col)
+
+            str_p_value = f'p = {dunn_p_values[pair][0]:.3f}'
+
+            if dunn_p_values[pair][0] < 0.001:
+                str_p_value = 'p < 0.001'
+            elif dunn_p_values[pair][0] < 0.01:
+                str_p_value = 'p < 0.01'
+
+            # Annotate line with p-value
+            plt.text((x1 + x2) * .5, y + h, str_p_value, ha='center', va='bottom', color=col, fontsize=20)
 
     plt.tight_layout()
     plt.savefig(f'./outputs/plots/selected_wells_{sample_size:03}.png', format='png', bbox_inches='tight')
@@ -458,46 +506,4 @@ def generate_swarmplot_of_well_means(fig_width, fig_height, plot_order, treatmen
     plt.xlabel('')
     plt.ylim(bottom=0.42, top=0.60)
     plt.title(f'Each dot represents the mean of {sample_size} cells')
-
-    # _, p_value = stats.kruskal(
-    #     *(mean_data[mean_data['TREATMENT'] == t]['MEAN_FASCIN_RATIO'] for t in
-    #       mean_data['TREATMENT'].unique()))
-    #
-    # dunn_result = sp.posthoc_dunn(mean_data, val_col='MEAN_FASCIN_RATIO', group_col='TREATMENT')
-    # for pair in dunn_pairs:
-    #     dunn_p_values[pair].append(dunn_result.loc[pair[0], pair[1]])
-    #
-    # y, h, col = mean_data['MEAN_FASCIN_RATIO'].max() + 0.005, 0.005, 'black'
-    #
-    # ymax = []
-    # for t in range(len(mean_data['TREATMENT'].unique()) - 1):
-    #     ymax.append(0)
-    #
-    # for pair in dunn_pairs:
-    #     x1, x2 = pair
-    #     x1 = [label.get_text() for label in ax.get_xticklabels()].index(x1)
-    #     x2 = [label.get_text() for label in ax.get_xticklabels()].index(x2)
-    #
-    #     y = mean_data[mean_data['TREATMENT'].isin(pair)].loc[:, 'MEAN_FASCIN_RATIO'].max() + 0.02
-    #
-    #     for x in range(min(x1, x2), max(x1, x2)):
-    #         if y <= ymax[x] + 0.01:
-    #             y = ymax[x] + 0.01
-    #         ymax[x] = y
-    #
-    #     if x1 < x2:
-    #         x1 += 0.02
-    #         x2 -= 0.02
-    #     else:
-    #         x1 -= 0.02
-    #         x2 += 0.02
-    #
-    #     # Draw line
-    #     plt.plot([x1, x1, x2, x2], [y, y + h, y + h, y], lw=1.5, c=col)
-    #
-    #     str_p_value = f'p = {dunn_p_values[pair][0]:.3f}'
-    #
-    #     # Annotate line with p-value
-    #     plt.text((x1 + x2) * .5, y + h, str_p_value, ha='center', va='bottom', color=col, fontsize=20)
-
     plt.show()

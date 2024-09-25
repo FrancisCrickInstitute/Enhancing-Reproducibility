@@ -36,9 +36,9 @@ data_subset = prepare_data(nuc_data, cyto_data, image_data, treatments, treatmen
 # # FIGURE 2 A - F
 # for s in [50, 200]:
 #     for i in range(3):
-#         generate_swarmplot(14, 10, 1, 1, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
-#                            1, s, data_subset, color_dict, treatment_col, variable_of_interest,
-#                            '$ \\log \\left[ \\frac {I_{F_N}}{(I_{F_N} + I_{C_N})} \\right]$')
+generate_swarmplot(14, 10, 1, 1, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
+                   1, -1, data_subset, color_dict, treatment_col, variable_of_interest,
+                   '$ \\log \\left[ \\frac {I_{F_N}}{(I_{F_N} + I_{C_N})} \\right]$', dunn_pairs)
 #
 # # FIGURE 2 G - I
 # plot_effect_size_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, variable_of_interest,
@@ -52,17 +52,17 @@ data_subset = prepare_data(nuc_data, cyto_data, image_data, treatments, treatmen
 # plot_cumulative_histogram_samples(data_subset, variable_of_interest, treatment_col, 'Untreated')
 
 # FIGURE 4 A
-for s in [50, 200, 500, -1]:
-    generate_swarmplot_of_well_means(24, 10,
-                                     ['Untreated', 'DMSO', 'SN0212398523', 'SN1054616339', 'SN1066932540',
-                                      'Leptomycin b'],
-                                     ['Untreated', 'DMSO', 'SN0212398523', 'SN1054616339', 'SN1066932540',
-                                      'Leptomycin b'],
-                                     prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds,
-                                                  compounds,
-                                                  ['J05', 'I19', 'G15', 'O02', 'B02', 'N12', 'L08', 'L18', 'H13', 'E22',
-                                                   'H10', 'B06']), color_dict, treatment_col, variable_of_interest,
-                                     '$ \\log \\left[ \\frac {I_{F_N}}{(I_{F_N} + I_{C_N})} \\right]$', dunn_pairs, s)
+# for s in [50, 200, 500, -1]:
+#     generate_swarmplot_of_well_means(24, 10,
+#                                      ['Untreated', 'DMSO', 'SN0212398523', 'SN1054616339', 'SN1066932540',
+#                                       'Leptomycin b'],
+#                                      ['Untreated', 'DMSO', 'SN0212398523', 'SN1054616339', 'SN1066932540',
+#                                       'Leptomycin b'],
+#                                      prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds,
+#                                                   compounds,
+#                                                   ['J05', 'I19', 'G15', 'O02', 'B02', 'N12', 'L08', 'L18', 'H13', 'E22',
+#                                                    'H10', 'B06']), color_dict, treatment_col, variable_of_interest,
+#                                      '$ \\log \\left[ \\frac {I_{F_N}}{(I_{F_N} + I_{C_N})} \\right]$', dunn_pairs, s)
 
 print('All Done!')
 
