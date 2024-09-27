@@ -29,27 +29,39 @@ image_data = pd.read_csv('./inputs/cell_profiler_outputs/Image.csv')
 nuc_data = pd.read_csv('./inputs/cell_profiler_outputs/Nuclei.csv')
 cyto_data = pd.read_csv('./inputs/cell_profiler_outputs/Cytoplasm.csv')
 treatments = annotations.set_index('Well')['Control Type'].to_dict()
+output_dir = 'E:/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/Plots'
 
 data_subset = prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds, compounds,
                            ['J05', 'O02', 'E22', 'L08'])
 
-# # FIGURE 2 A - F
-# for s in [50, 200]:
-#     for i in range(3):
-generate_swarmplot(14, 10, 1, 1, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
-                   1, -1, data_subset, color_dict, treatment_col, variable_of_interest,
-                   '$ \\log \\left[ \\frac {I_{F_N}}{(I_{F_N} + I_{C_N})} \\right]$', dunn_pairs)
-#
-# # FIGURE 2 G - I
-# plot_effect_size_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, variable_of_interest,
-#                                'Effect Size', ['SN0212398523', 'DMSO', 'Leptomycin b'])
-#
-# # FIGURE 3 A
-# plot_iqr_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, variable_of_interest,
-#                        'Error in Inter-Quartile Range')
-#
-# # FIGURE 3 B - H
-# plot_cumulative_histogram_samples(data_subset, variable_of_interest, treatment_col, 'Untreated')
+# FIGURE 2 A - F
+point_size = 8
+filenames = ['2A.png', '2B.png', '2C.png', '2D.png', '2E.png', '2F.png']
+filecount = 0
+for s in [50, 200]:
+    if s > 50:
+        point_size = 4
+    for i in range(3):
+        generate_swarmplot(14, 10, 1, 1, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
+                           1, s, data_subset, color_dict, treatment_col, variable_of_interest,
+                           'Relative Nuclear Fascin Localisation', dunn_pairs,
+                           os.path.join(output_dir, filenames[filecount]),
+                           point_size=point_size)
+        filecount = filecount + 1
+
+# FIGURE 2 G - I
+filenames = ['2G.png', '2H.png', '2I.png']
+plot_effect_size_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, variable_of_interest,
+                               'Effect Size Relative to Untreated', ['SN0212398523', 'DMSO', 'Leptomycin b'],
+                               output_dir, filenames)
+
+# FIGURE 3 A
+plot_iqr_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, variable_of_interest,
+                       'Error in Inter-Quartile Range', os.path.join(output_dir, '3A.png'))
+
+# FIGURE 3 B - H
+filenames = ['3B.png', '3C.png', '3D.png', '3E.png', '3F.png', '3G.png', '3H.png']
+plot_cumulative_histogram_samples(data_subset, variable_of_interest, treatment_col, 'Untreated', output_dir, filenames)
 
 # FIGURE 4 A
 # for s in [50, 200, 500, -1]:
@@ -63,6 +75,11 @@ generate_swarmplot(14, 10, 1, 1, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomyc
 #                                                   ['J05', 'I19', 'G15', 'O02', 'B02', 'N12', 'L08', 'L18', 'H13', 'E22',
 #                                                    'H10', 'B06']), color_dict, treatment_col, variable_of_interest,
 #                                      '$ \\log \\left[ \\frac {I_{F_N}}{(I_{F_N} + I_{C_N})} \\right]$', dunn_pairs, s)
+
+# # SUPP FIGURE 1
+# generate_swarmplot(14, 10, 1, 1, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
+#                    1, -1, data_subset, color_dict, treatment_col, variable_of_interest,
+#                    '$ \\log \\left[ \\frac {I_{F_N}}{(I_{F_N} + I_{C_N})} \\right]$', dunn_pairs)
 
 print('All Done!')
 

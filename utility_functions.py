@@ -8,12 +8,17 @@ import requests
 import scikit_posthocs as sp
 import scipy.stats as stats
 import seaborn as sns
+import statsmodels.api as sm
 from scipy.optimize import curve_fit
 
 
 # Define the decaying exponential function
 def exp_decay(x, a, b, c):
     return a * np.exp(-b * x) + c
+
+
+def ci(series, ci_level):
+    return sm.stats.DescrStatsW(series).tconfint_mean(alpha=1 - ci_level)
 
 
 def normalize_well_format(well):
@@ -89,7 +94,8 @@ def map_wells_to_treatments(data, treatments, treatments_to_compounds, compounds
 
 
 def generate_swarmplot(fig_width, fig_height, plot_rows, plot_cols, plot_order, n_samples, sample_size, data,
-                       color_dict, treatment_col, variable_of_interest, y_label, dunn_pairs):
+                       color_dict, treatment_col, variable_of_interest, y_label, dunn_pairs, output_file, point_size=2,
+                       p_values=False):
     """
     Generates and saves swarm plots for the variable of interest across different treatments.
 
@@ -128,62 +134,74 @@ def generate_swarmplot(fig_width, fig_height, plot_rows, plot_cols, plot_order, 
     # Plot the data
     for sample_index in range(n_samples):
         ax = plt.subplot(plot_rows, plot_cols, sample_index + 1)
-        sns.boxplot(x=treatment_col, y=variable_of_interest, data=sampled_data, order=plot_order, color='white',
-                    showfliers=False, ax=ax, linewidth=2)
         sns.swarmplot(x=treatment_col, y=variable_of_interest, data=sampled_data, order=plot_order, palette=color_dict,
-                      hue=treatment_col, size=2, alpha=0.9, ax=ax)
+                      hue=treatment_col, size=point_size, alpha=0.9, ax=ax, zorder=1)
+        sns.boxplot(x=treatment_col, y=variable_of_interest, data=sampled_data, order=plot_order,
+                    boxprops=dict(facecolor='none', zorder=2),
+                    whiskerprops=dict(color="black", linewidth=2, zorder=2),
+                    capprops=dict(color="black", linewidth=2, zorder=2),
+                    medianprops=dict(color="black", linewidth=2, zorder=2),
+                    showfliers=False, ax=ax)
+        # Calculate and plot the confidence intervals
+        for treatment in plot_order:
+            y_values = sampled_data[sampled_data[treatment_col] == treatment][variable_of_interest]
+            lower, upper = ci(y_values, 0.95)
+            x_pos = plot_order.index(treatment)
+            ax.errorbar(x_pos, y_values.mean(), yerr=[[y_values.mean() - lower], [upper - y_values.mean()]],
+                        fmt='none', ecolor='red', capsize=40, capthick=2, zorder=3)
         ax.set_ylabel(y_label)
         ax.set_xlabel('')
-        # ax.set_ylim(bottom=0, top=1.1)
+        if ~p_values:
+            ax.set_ylim(bottom=0, top=1.0)
+        else:
+            _, p_value = stats.kruskal(
+                *(sampled_data[sampled_data[treatment_col] == t][variable_of_interest] for t in
+                  sampled_data[treatment_col].unique()))
 
-        _, p_value = stats.kruskal(
-            *(sampled_data[sampled_data[treatment_col] == t][variable_of_interest] for t in
-              sampled_data[treatment_col].unique()))
+            dunn_result = sp.posthoc_dunn(sampled_data, val_col=variable_of_interest, group_col=treatment_col)
+            for pair in dunn_pairs:
+                dunn_p_values[pair].append(dunn_result.loc[pair[0], pair[1]])
 
-        dunn_result = sp.posthoc_dunn(sampled_data, val_col=variable_of_interest, group_col=treatment_col)
-        for pair in dunn_pairs:
-            dunn_p_values[pair].append(dunn_result.loc[pair[0], pair[1]])
+            y, h, col = sampled_data[variable_of_interest].max() + 0.005, 0.005, 'black'
 
-        y, h, col = sampled_data[variable_of_interest].max() + 0.005, 0.005, 'black'
+            ymax = []
+            for t in range(len(sampled_data[treatment_col].unique()) - 1):
+                ymax.append(0)
 
-        ymax = []
-        for t in range(len(sampled_data[treatment_col].unique()) - 1):
-            ymax.append(0)
+            for pair in dunn_pairs:
+                x1, x2 = pair
+                x1 = [label.get_text() for label in ax.get_xticklabels()].index(x1)
+                x2 = [label.get_text() for label in ax.get_xticklabels()].index(x2)
 
-        for pair in dunn_pairs:
-            x1, x2 = pair
-            x1 = [label.get_text() for label in ax.get_xticklabels()].index(x1)
-            x2 = [label.get_text() for label in ax.get_xticklabels()].index(x2)
+                y = sampled_data[sampled_data[treatment_col].isin(pair)].loc[:, variable_of_interest].max() + 0.02
 
-            y = sampled_data[sampled_data[treatment_col].isin(pair)].loc[:, variable_of_interest].max() + 0.02
+                for x in range(min(x1, x2), max(x1, x2)):
+                    if y <= ymax[x] + 0.05:
+                        y = ymax[x] + 0.05
+                    ymax[x] = y
 
-            for x in range(min(x1, x2), max(x1, x2)):
-                if y <= ymax[x] + 0.05:
-                    y = ymax[x] + 0.05
-                ymax[x] = y
+                if x1 < x2:
+                    x1 += 0.02
+                    x2 -= 0.02
+                else:
+                    x1 -= 0.02
+                    x2 += 0.02
 
-            if x1 < x2:
-                x1 += 0.02
-                x2 -= 0.02
-            else:
-                x1 -= 0.02
-                x2 += 0.02
+                # Draw line
+                plt.plot([x1, x1, x2, x2], [y, y + h, y + h, y], lw=1.5, c=col)
 
-            # Draw line
-            plt.plot([x1, x1, x2, x2], [y, y + h, y + h, y], lw=1.5, c=col)
+                str_p_value = f'p = {dunn_p_values[pair][0]:.3f}'
 
-            str_p_value = f'p = {dunn_p_values[pair][0]:.3f}'
+                if dunn_p_values[pair][0] < 0.001:
+                    str_p_value = 'p < 0.001'
+                elif dunn_p_values[pair][0] < 0.01:
+                    str_p_value = 'p < 0.01'
 
-            if dunn_p_values[pair][0] < 0.001:
-                str_p_value = 'p < 0.001'
-            elif dunn_p_values[pair][0] < 0.01:
-                str_p_value = 'p < 0.01'
-
-            # Annotate line with p-value
-            plt.text((x1 + x2) * .5, y + h, str_p_value, ha='center', va='bottom', color=col, fontsize=20)
+                # Annotate line with p-value
+                plt.text((x1 + x2) * .5, y + h, str_p_value, ha='center', va='bottom', color=col, fontsize=20)
 
     plt.tight_layout()
-    plt.savefig(f'./outputs/plots/selected_wells_{sample_size:03}.png', format='png', bbox_inches='tight')
+    plt.savefig(output_file, format='png', bbox_inches='tight')
     plt.show()
 
 
@@ -255,7 +273,7 @@ def plot_mean_v_sample_size(sample_sizes, num_iterations, data, treatment_col, v
 
 
 def plot_effect_size_v_sample_size(sample_sizes, num_iterations, data, treatment_col, variable_of_interest, y_label,
-                                   treatments):
+                                   treatments, output_dir, filenames):
     # Initialize dictionaries to store multiple mean values per sample size for each treatment
     mean_values = {treatment: [[] for _ in range(len(sample_sizes))] for treatment in data[treatment_col].unique()}
     for sample_size_index, sample_size in enumerate(sample_sizes):
@@ -264,7 +282,8 @@ def plot_effect_size_v_sample_size(sample_sizes, num_iterations, data, treatment
             for treatment in treatments:
                 subsample = data[data[treatment_col] == treatment].sample(n=sample_size, replace=False)
                 control_subsample = data[data[treatment_col] == 'Untreated'].sample(n=sample_size, replace=False)
-                mean = subsample[variable_of_interest].mean() - control_subsample[variable_of_interest].mean()
+                mean = (subsample[variable_of_interest].mean() - control_subsample[variable_of_interest].mean()) / \
+                       control_subsample[variable_of_interest].std()
                 mean_values[treatment][sample_size_index].append(mean)
                 combined_data = pd.concat([combined_data, subsample])
 
@@ -288,10 +307,12 @@ def plot_effect_size_v_sample_size(sample_sizes, num_iterations, data, treatment
         plt.ylabel(y_label)
         plt.legend(fontsize=20)
         plt.axhline(y=0.0, color='black', linestyle='dotted')
+        plt.savefig(os.path.join(output_dir, filenames[t]), format='png', bbox_inches='tight')
         plt.show()
 
 
-def plot_iqr_v_sample_size(sample_sizes, num_iterations, data, treatment_col, variable_of_interest, y_label):
+def plot_iqr_v_sample_size(sample_sizes, num_iterations, data, treatment_col, variable_of_interest, y_label,
+                           output_file):
     # Initialize dictionaries to store multiple mean values per sample size for each treatment
     mean_values = {treatment: [[] for _ in range(len(sample_sizes))] for treatment in data[treatment_col].unique()}
     for sample_size_index, sample_size in enumerate(sample_sizes):
@@ -326,13 +347,15 @@ def plot_iqr_v_sample_size(sample_sizes, num_iterations, data, treatment_col, va
     plt.xlabel('Sample Size')
     plt.ylabel(y_label)
     plt.legend(fontsize=20)
+    plt.savefig(output_file, format='png', bbox_inches='tight')
     plt.show()
 
 
-def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col, treatment):
+def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col, treatment, output_dir, filenames):
     total_samples = []
     max_samples = 500
     step = 10
+    filecount = 1
 
     subsample = data[data[treatment_col] == treatment]
 
@@ -392,7 +415,9 @@ def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col,
             plt.ylim(bottom=0, top=20)
             plt.xlim(left=0, right=1)
             plt.grid(True)
+            plt.savefig(os.path.join(output_dir, filenames[filecount]), format='png', bbox_inches='tight')
             plt.show()
+            filecount = filecount + 1
 
         # print(
         #     f'Median: {np.median(sample_data)} IQR: {np.percentile(sample_data, 75) - np.percentile(sample_data, 25)}')
@@ -419,6 +444,7 @@ def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col,
     lines, labels = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
     ax2.legend(lines + lines2, labels + labels2, loc='upper center', bbox_to_anchor=(0.5, 1.15), ncol=4)
+    plt.savefig(os.path.join(output_dir, filenames[0]), format='png', bbox_inches='tight')
     plt.show()
 
 
