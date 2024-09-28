@@ -5,11 +5,8 @@ plt.rcParams['axes.linewidth'] = 2
 plate_number = 1093711385
 treatment_col = 'Treatment'
 variable_of_interest = 'Fascin_Ratio'
-dunn_pairs = [('Untreated', 'DMSO'), ('DMSO', 'SN0212398523'), ('SN0212398523', 'Leptomycin b'),
-              ('Untreated', 'SN0212398523'), ('Untreated', 'Leptomycin b'), ('DMSO', 'Leptomycin b')]
 color_dict = {'SN1066932540': 'red', 'SN1054616339': 'yellow', 'SN0212398523': 'orange', 'Untreated': 'blue',
-              'DMSO': 'gray',
-              'Leptomycin b': 'purple'}
+              'DMSO': 'gray', 'Leptomycin b': 'purple'}
 
 directories = ('./inputs/idr', './outputs/plots', './outputs/data')
 y_label = 'Relative Nuclear Fascin Localisation'
@@ -68,24 +65,18 @@ plot_cumulative_histogram_samples(data_subset, variable_of_interest, treatment_c
 # FIGURE 4 A - C
 filenames = ['4A.png', '4B.png', '4C.png']
 filecount = 0
+treatments = ['Untreated', 'DMSO', 'SN0212398523', 'SN1054616339', 'SN1066932540', 'Leptomycin b']
 for s in [50, 200, 500]:
-    generate_swarmplot_of_well_means(24, 10,
-                                     ['Untreated', 'DMSO', 'SN0212398523', 'SN1054616339', 'SN1066932540',
-                                      'Leptomycin b'],
-                                     ['Untreated', 'DMSO', 'SN0212398523', 'SN1054616339', 'SN1066932540',
-                                      'Leptomycin b'],
+    generate_swarmplot_of_well_means(treatments, treatments,
                                      prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds,
                                                   compounds,
                                                   ['J05', 'I19', 'G15', 'O02', 'B02', 'N12', 'L08', 'L18', 'H13', 'E22',
                                                    'H10', 'B06']), color_dict, treatment_col, variable_of_interest,
-                                     y_label, dunn_pairs, s,
-                                     os.path.join(output_dir, filenames[filecount]))
+                                     y_label, os.path.join(output_dir, filenames[filecount]), sample_size=s)
     filecount = filecount + 1
 
 # SUPP FIGURE 1
-generate_swarmplot(14, 10, 1, 1, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
-                   1, -1, data_subset, color_dict, treatment_col, variable_of_interest,
-                   y_label, dunn_pairs,
-                   os.path.join(output_dir, 'S1.png'))
+generate_swarmplot(['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'], data_subset, color_dict, treatment_col,
+                   variable_of_interest, y_label, os.path.join(output_dir, 'S1.png'))
 
 print('All Done!')

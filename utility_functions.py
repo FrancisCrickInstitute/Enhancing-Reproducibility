@@ -521,11 +521,12 @@ def plot_p_v_sample_size(sample_sizes, num_iterations, data, treatment_col, vari
     plt.show()
 
 
-def generate_swarmplot_of_well_means(fig_width, fig_height, plot_order, treatments, data, color_dict, treatment_col,
-                                     variable_of_interest, y_label, dunn_pairs, sample_size, output_file,
-                                     random_seed=42):
+def generate_swarmplot_of_well_means(plot_order, treatments, data, color_dict, treatment_col, variable_of_interest,
+                                     y_label, output_file, random_seed=42, fig_width=24, fig_height=10,
+                                     sample_size=-1):
     # treatments = data[treatment_col].unique()
     mean_data = pd.DataFrame()
+    dunn_pairs = generate_pairs(treatments)
     dunn_p_values = {pair: [] for pair in dunn_pairs}
     plt.figure(num=1, figsize=(fig_width, fig_height))
 
