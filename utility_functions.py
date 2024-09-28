@@ -119,10 +119,10 @@ def generate_swarmplot(fig_width, fig_height, plot_rows, plot_cols, plot_order, 
     # Sample the data if sample_size > 0
     if sample_size > 0:
         sampled_data = pd.concat([
-            data[data[treatment_col] == 'Untreated'].sample(n=sample_size, replace=False),
-            data[data[treatment_col] == 'DMSO'].sample(n=sample_size, replace=False),
-            data[data[treatment_col] == 'SN0212398523'].sample(n=sample_size, replace=False),
-            data[data[treatment_col] == 'Leptomycin b'].sample(n=sample_size, replace=False)
+            data[data[treatment_col] == 'Untreated'].sample(n=sample_size, replace=False, random_state=42),
+            data[data[treatment_col] == 'DMSO'].sample(n=sample_size, replace=False, random_state=42),
+            data[data[treatment_col] == 'SN0212398523'].sample(n=sample_size, replace=False, random_state=42),
+            data[data[treatment_col] == 'Leptomycin b'].sample(n=sample_size, replace=False, random_state=42)
         ])
 
         # Save sampled data if needed (optional)
@@ -319,7 +319,7 @@ def plot_iqr_v_sample_size(sample_sizes, num_iterations, data, treatment_col, va
         for _ in range(num_iterations):
             combined_data = pd.DataFrame()
             for treatment in data[treatment_col].unique():
-                subsample = data[data[treatment_col] == treatment].sample(n=sample_size, replace=False)
+                subsample = data[data[treatment_col] == treatment].sample(n=sample_size, replace=False, random_state=42)
                 q1, q3 = np.percentile(subsample[variable_of_interest], [25, 75])
                 iqr = q3 - q1
                 mean_values[treatment][sample_size_index].append(iqr)
@@ -376,7 +376,8 @@ def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col,
         # Sample additional data and add it to the total_samples list
         if new_samples_count > 0:
             new_samples = subsample[~subsample.index.isin(total_samples)].sample(n=new_samples_count,
-                                                                                 replace=False).index.tolist()
+                                                                                 replace=False,
+                                                                                 random_state=42).index.tolist()
             total_samples.extend(new_samples)
 
         # Extract the data for the current total samples
@@ -461,7 +462,7 @@ def plot_p_v_sample_size(sample_sizes, num_iterations, data, treatment_col, vari
             combined_data = pd.DataFrame()
 
             for treatment in data[treatment_col].unique():
-                subsample = data[data[treatment_col] == treatment].sample(n=sample_size, replace=False)
+                subsample = data[data[treatment_col] == treatment].sample(n=sample_size, replace=False, random_state=42)
                 combined_data = pd.concat([combined_data, subsample])
 
             # Perform Kruskal-Wallis test
@@ -501,7 +502,7 @@ def plot_p_v_sample_size(sample_sizes, num_iterations, data, treatment_col, vari
 
 
 def generate_swarmplot_of_well_means(fig_width, fig_height, plot_order, treatments, data, color_dict, treatment_col,
-                                     variable_of_interest, y_label, dunn_pairs, sample_size):
+                                     variable_of_interest, y_label, dunn_pairs, sample_size, output_file):
     # treatments = data[treatment_col].unique()
     mean_data = pd.DataFrame()
     dunn_p_values = {pair: [] for pair in dunn_pairs}
@@ -514,7 +515,7 @@ def generate_swarmplot_of_well_means(fig_width, fig_height, plot_order, treatmen
         #     wells = np.random.choice(wells, 3)
         for w in wells:
             if sample_size > 0:
-                sdata = tdata[tdata['Well'] == w].sample(n=sample_size, replace=False)
+                sdata = tdata[tdata['Well'] == w].sample(n=sample_size, replace=False, random_state=42)
             else:
                 sdata = tdata[tdata['Well'] == w]
             smean = np.mean(sdata[variable_of_interest])
@@ -532,4 +533,5 @@ def generate_swarmplot_of_well_means(fig_width, fig_height, plot_order, treatmen
     plt.xlabel('')
     plt.ylim(bottom=0.42, top=0.60)
     plt.title(f'Each dot represents the mean of {sample_size} cells')
+    plt.savefig(output_file, format='png', bbox_inches='tight')
     plt.show()

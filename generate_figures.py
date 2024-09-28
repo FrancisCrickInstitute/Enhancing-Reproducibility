@@ -29,7 +29,7 @@ image_data = pd.read_csv('./inputs/cell_profiler_outputs/Image.csv')
 nuc_data = pd.read_csv('./inputs/cell_profiler_outputs/Nuclei.csv')
 cyto_data = pd.read_csv('./inputs/cell_profiler_outputs/Cytoplasm.csv')
 treatments = annotations.set_index('Well')['Control Type'].to_dict()
-output_dir = 'E:/OneDrive - The Francis Crick Institute/Publications/2023_Dont_Trust_P_Values/Plots'
+output_dir = './outputs/plots'
 
 data_subset = prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds, compounds,
                            ['J05', 'O02', 'E22', 'L08'])
@@ -63,23 +63,28 @@ plot_iqr_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, v
 filenames = ['3B.png', '3C.png', '3D.png', '3E.png', '3F.png', '3G.png', '3H.png']
 plot_cumulative_histogram_samples(data_subset, variable_of_interest, treatment_col, 'Untreated', output_dir, filenames)
 
-# FIGURE 4 A
-# for s in [50, 200, 500, -1]:
-#     generate_swarmplot_of_well_means(24, 10,
-#                                      ['Untreated', 'DMSO', 'SN0212398523', 'SN1054616339', 'SN1066932540',
-#                                       'Leptomycin b'],
-#                                      ['Untreated', 'DMSO', 'SN0212398523', 'SN1054616339', 'SN1066932540',
-#                                       'Leptomycin b'],
-#                                      prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds,
-#                                                   compounds,
-#                                                   ['J05', 'I19', 'G15', 'O02', 'B02', 'N12', 'L08', 'L18', 'H13', 'E22',
-#                                                    'H10', 'B06']), color_dict, treatment_col, variable_of_interest,
-#                                      '$ \\log \\left[ \\frac {I_{F_N}}{(I_{F_N} + I_{C_N})} \\right]$', dunn_pairs, s)
+# FIGURE 4 A - C
+filenames = ['4A.png', '4B.png', '4C.png']
+filecount = 0
+for s in [50, 200, 500]:
+    generate_swarmplot_of_well_means(24, 10,
+                                     ['Untreated', 'DMSO', 'SN0212398523', 'SN1054616339', 'SN1066932540',
+                                      'Leptomycin b'],
+                                     ['Untreated', 'DMSO', 'SN0212398523', 'SN1054616339', 'SN1066932540',
+                                      'Leptomycin b'],
+                                     prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds,
+                                                  compounds,
+                                                  ['J05', 'I19', 'G15', 'O02', 'B02', 'N12', 'L08', 'L18', 'H13', 'E22',
+                                                   'H10', 'B06']), color_dict, treatment_col, variable_of_interest,
+                                     '$ \\log \\left[ \\frac {I_{F_N}}{(I_{F_N} + I_{C_N})} \\right]$', dunn_pairs, s,
+                                     os.path.join(output_dir, filenames[filecount]))
+    filecount = filecount + 1
 
-# # SUPP FIGURE 1
-# generate_swarmplot(14, 10, 1, 1, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
-#                    1, -1, data_subset, color_dict, treatment_col, variable_of_interest,
-#                    '$ \\log \\left[ \\frac {I_{F_N}}{(I_{F_N} + I_{C_N})} \\right]$', dunn_pairs)
+# SUPP FIGURE 1
+generate_swarmplot(14, 10, 1, 1, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
+                   1, -1, data_subset, color_dict, treatment_col, variable_of_interest,
+                   '$ \\log \\left[ \\frac {I_{F_N}}{(I_{F_N} + I_{C_N})} \\right]$', dunn_pairs,
+                   os.path.join(output_dir, 'S1.png'))
 
 print('All Done!')
 
