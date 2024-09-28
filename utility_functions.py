@@ -1,3 +1,4 @@
+import itertools
 import os
 import re
 
@@ -10,6 +11,12 @@ import scipy.stats as stats
 import seaborn as sns
 import statsmodels.api as sm
 from scipy.optimize import curve_fit
+
+
+def generate_pairs(input_list):
+    # Generate all combinations of pairs
+    pairs = list(itertools.combinations(input_list, 2))
+    return pairs
 
 
 # Define the decaying exponential function
@@ -93,9 +100,9 @@ def map_wells_to_treatments(data, treatments, treatments_to_compounds, compounds
     return data
 
 
-def generate_swarmplot(fig_width, fig_height, plot_rows, plot_cols, plot_order, n_samples, sample_size, data,
-                       color_dict, treatment_col, variable_of_interest, y_label, dunn_pairs, output_file, point_size=2,
-                       p_values=False, random_seed=42):
+def generate_swarmplot(plot_order, data, color_dict, treatment_col, variable_of_interest, y_label, output_file,
+                       point_size=2, p_values=False, random_seed=42, fig_width=14, fig_height=10, plot_rows=1,
+                       plot_cols=1, n_samples=1, sample_size=-1):
     """
     Generates and saves swarm plots for the variable of interest across different treatments.
 
@@ -113,6 +120,7 @@ def generate_swarmplot(fig_width, fig_height, plot_rows, plot_cols, plot_order, 
     """
 
     plt.figure(figsize=(fig_width, fig_height))
+    dunn_pairs = generate_pairs(plot_order)
     dunn_p_values = {pair: [] for pair in dunn_pairs}
 
     # Sample the data if sample_size > 0

@@ -44,11 +44,9 @@ for s in [50, 200]:
     if s > 50:
         point_size = 4
     for i in range(3):
-        generate_swarmplot(14, 10, 1, 1, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
-                           1, s, data_subset, color_dict, treatment_col, variable_of_interest,
-                           y_label, dunn_pairs,
-                           os.path.join(output_dir, filenames[filecount]),
-                           point_size=point_size, random_seed=random_seed)
+        generate_swarmplot(['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'], data_subset, color_dict,
+                           treatment_col, variable_of_interest, y_label, os.path.join(output_dir, filenames[filecount]),
+                           point_size=point_size, random_seed=random_seed, sample_size=s)
         filecount = filecount + 1
         random_seed = random_seed + 1
 
