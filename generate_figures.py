@@ -32,42 +32,42 @@ output_dir = './outputs/plots'
 data_subset = prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds, compounds,
                            ['J05', 'O02', 'E22', 'L08'])
 
-# FIGURE 2 A - F
-point_size = 8
-filenames = ['2A.png', '2B.png', '2C.png', '2D.png', '2E.png', '2F.png']
-filecount = 0
-random_seed = 42
-for s in [50, 200]:
-    if s > 50:
-        point_size = 4
-    for i in range(3):
-        generate_swarmplot(['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'], data_subset, color_dict,
-                           treatment_col, variable_of_interest, y_label, os.path.join(output_dir, filenames[filecount]),
-                           point_size=point_size, random_seed=random_seed, sample_size=s)
-        filecount = filecount + 1
-        random_seed = random_seed + 1
-
-# FIGURE 2 G - I
-filenames = ['2G.png', '2H.png', '2I.png']
-plot_effect_size_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, variable_of_interest,
-                               'Median Effect Size Relative to Untreated', ['SN0212398523', 'DMSO', 'Leptomycin b'],
-                               output_dir, filenames)
-
-# FIGURE 3 A
-plot_iqr_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, variable_of_interest,
-                       'Error in Inter-Quartile Range', os.path.join(output_dir, '3A.png'))
-
-# FIGURE 3 B - H
-filenames = ['3B.png', '3C.png', '3D.png', '3E.png', '3F.png', '3G.png', '3H.png']
-plot_cumulative_histogram_samples(data_subset, variable_of_interest, treatment_col, 'Untreated', output_dir, filenames,
-                                  y_label)
+# # FIGURE 2 A - F
+# point_size = 8
+# filenames = ['2A.png', '2B.png', '2C.png', '2D.png', '2E.png', '2F.png']
+# filecount = 0
+# random_seed = 42
+# for s in [50, 200]:
+#     if s > 50:
+#         point_size = 4
+#     for i in range(3):
+#         generate_swarmplot(['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'], data_subset, color_dict,
+#                            treatment_col, variable_of_interest, y_label, os.path.join(output_dir, filenames[filecount]),
+#                            point_size=point_size, random_seed=random_seed, sample_size=s)
+#         filecount = filecount + 1
+#         random_seed = random_seed + 1
+#
+# # FIGURE 2 G - I
+# filenames = ['2G.png', '2H.png', '2I.png']
+# plot_effect_size_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, variable_of_interest,
+#                                'Median Effect Size Relative to Untreated', ['SN0212398523', 'DMSO', 'Leptomycin b'],
+#                                output_dir, filenames)
+#
+# # FIGURE 3 A
+# plot_iqr_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, variable_of_interest,
+#                        'Error in Inter-Quartile Range', os.path.join(output_dir, '3A.png'))
+#
+# # FIGURE 3 B - H
+# filenames = ['3B.png', '3C.png', '3D.png', '3E.png', '3F.png', '3G.png', '3H.png']
+# plot_cumulative_histogram_samples(data_subset, variable_of_interest, treatment_col, 'Untreated', output_dir, filenames,
+#                                   y_label)
 
 # FIGURE 4 A - C
 filenames = ['4A.png', '4B.png', '4C.png']
 filecount = 0
-treatments = ['Untreated', 'DMSO', 'SN0212398523', 'SN1054616339', 'SN1066932540', 'Leptomycin b']
+selected_treatments = ['Untreated', 'DMSO', 'SN0212398523', 'SN1054616339', 'SN1066932540', 'Leptomycin b']
 for s in [50, 200, 500]:
-    generate_swarmplot_of_well_means(treatments, treatments,
+    generate_swarmplot_of_well_means(selected_treatments, selected_treatments,
                                      prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds,
                                                   compounds,
                                                   ['J05', 'I19', 'G15', 'O02', 'B02', 'N12', 'L08', 'L18', 'H13', 'E22',

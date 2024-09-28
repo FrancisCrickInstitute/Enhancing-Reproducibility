@@ -299,12 +299,9 @@ def plot_effect_size_v_sample_size(sample_sizes, num_iterations, data, treatment
                 random_seed = random_seed + 1
 
     # Calculate the mean, minimum, and maximum for the mean values
-    median_values_mean = {treatment: np.nanmedian(mean_values[treatment], axis=1) for treatment in
-                          data[treatment_col].unique()}
-    mean_values_25th = {treatment: np.nanpercentile(mean_values[treatment], 25, axis=1) for treatment in
-                        data[treatment_col].unique()}
-    mean_values_75th = {treatment: np.nanpercentile(mean_values[treatment], 75, axis=1) for treatment in
-                        data[treatment_col].unique()}
+    median_values_mean = {treatment: np.nanmedian(mean_values[treatment], axis=1) for treatment in treatments}
+    mean_values_25th = {treatment: np.nanpercentile(mean_values[treatment], 25, axis=1) for treatment in treatments}
+    mean_values_75th = {treatment: np.nanpercentile(mean_values[treatment], 75, axis=1) for treatment in treatments}
 
     # Plotting the mean Fascin_Ratio for each treatment with uncertainty ranges
 
