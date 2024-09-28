@@ -12,6 +12,7 @@ color_dict = {'SN1066932540': 'red', 'SN1054616339': 'yellow', 'SN0212398523': '
               'Leptomycin b': 'purple'}
 
 directories = ('./inputs/idr', './outputs/plots', './outputs/data')
+y_label = 'Relative Nuclear Fascin Localisation'
 
 for d in directories:
     if not os.path.exists(d):
@@ -38,21 +39,23 @@ data_subset = prepare_data(nuc_data, cyto_data, image_data, treatments, treatmen
 point_size = 8
 filenames = ['2A.png', '2B.png', '2C.png', '2D.png', '2E.png', '2F.png']
 filecount = 0
+random_seed = 42
 for s in [50, 200]:
     if s > 50:
         point_size = 4
     for i in range(3):
         generate_swarmplot(14, 10, 1, 1, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
                            1, s, data_subset, color_dict, treatment_col, variable_of_interest,
-                           'Relative Nuclear Fascin Localisation', dunn_pairs,
+                           y_label, dunn_pairs,
                            os.path.join(output_dir, filenames[filecount]),
-                           point_size=point_size)
+                           point_size=point_size, random_seed=random_seed)
         filecount = filecount + 1
+        random_seed = random_seed + 1
 
 # FIGURE 2 G - I
 filenames = ['2G.png', '2H.png', '2I.png']
 plot_effect_size_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, variable_of_interest,
-                               'Effect Size Relative to Untreated', ['SN0212398523', 'DMSO', 'Leptomycin b'],
+                               'Median Effect Size Relative to Untreated', ['SN0212398523', 'DMSO', 'Leptomycin b'],
                                output_dir, filenames)
 
 # FIGURE 3 A
@@ -61,7 +64,8 @@ plot_iqr_v_sample_size([*range(10, 500, 10)], 100, data_subset, treatment_col, v
 
 # FIGURE 3 B - H
 filenames = ['3B.png', '3C.png', '3D.png', '3E.png', '3F.png', '3G.png', '3H.png']
-plot_cumulative_histogram_samples(data_subset, variable_of_interest, treatment_col, 'Untreated', output_dir, filenames)
+plot_cumulative_histogram_samples(data_subset, variable_of_interest, treatment_col, 'Untreated', output_dir, filenames,
+                                  y_label)
 
 # FIGURE 4 A - C
 filenames = ['4A.png', '4B.png', '4C.png']
@@ -76,19 +80,14 @@ for s in [50, 200, 500]:
                                                   compounds,
                                                   ['J05', 'I19', 'G15', 'O02', 'B02', 'N12', 'L08', 'L18', 'H13', 'E22',
                                                    'H10', 'B06']), color_dict, treatment_col, variable_of_interest,
-                                     '$ \\log \\left[ \\frac {I_{F_N}}{(I_{F_N} + I_{C_N})} \\right]$', dunn_pairs, s,
+                                     y_label, dunn_pairs, s,
                                      os.path.join(output_dir, filenames[filecount]))
     filecount = filecount + 1
 
 # SUPP FIGURE 1
 generate_swarmplot(14, 10, 1, 1, ['Untreated', 'DMSO', 'SN0212398523', 'Leptomycin b'],
                    1, -1, data_subset, color_dict, treatment_col, variable_of_interest,
-                   '$ \\log \\left[ \\frac {I_{F_N}}{(I_{F_N} + I_{C_N})} \\right]$', dunn_pairs,
+                   y_label, dunn_pairs,
                    os.path.join(output_dir, 'S1.png'))
 
 print('All Done!')
-
-#                                      ['Untreated', 'DMSO', 'SN0212398523', 'SN1054616339', 'SN0022071220',
-#                                       'Leptomycin b'],
-#                                      ['Untreated', 'DMSO', 'SN0212398523', 'SN1054616339', 'SN0022071220',
-#                                       'Leptomycin b'],
