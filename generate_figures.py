@@ -66,13 +66,15 @@ plot_cumulative_histogram_samples(data_subset, variable_of_interest, treatment_c
 filenames = ['Fig4A.png', 'Fig4B.png', 'Fig4C.png']
 filecount = 0
 selected_treatments = ['Untreated', 'DMSO', 'SN0212398523', 'SN1054616339', 'SN1066932540', 'Leptomycin b']
+point_size = {50: 8, 200: 4, 500: 2.5}
 for s in [50, 200, 500]:
-    generate_swarmplot_of_well_means(selected_treatments, selected_treatments,
-                                     prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds,
+    generate_superplot(selected_treatments, selected_treatments,
+                       prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds,
                                                   compounds,
                                                   ['J05', 'I19', 'G15', 'O02', 'B02', 'N12', 'L08', 'L18', 'H13', 'E22',
                                                    'H10', 'B06']), color_dict, treatment_col, variable_of_interest,
-                                     y_label, os.path.join(output_dir, filenames[filecount]), sample_size=s)
+                       y_label, os.path.join(output_dir, filenames[filecount]), sample_size=s,
+                       point_size=point_size[s])
     filecount = filecount + 1
 
 # SUPP FIGURE 1

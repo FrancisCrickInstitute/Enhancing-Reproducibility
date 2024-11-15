@@ -518,39 +518,58 @@ def plot_p_v_sample_size(sample_sizes, num_iterations, data, treatment_col, vari
     plt.show()
 
 
-def generate_swarmplot_of_well_means(plot_order, treatments, data, color_dict, treatment_col, variable_of_interest,
-                                     y_label, output_file, random_seed=42, fig_width=24, fig_height=10,
-                                     sample_size=-1):
-    # treatments = data[treatment_col].unique()
+def generate_superplot(plot_order, treatments, data, color_dict, treatment_col, variable_of_interest,
+                       y_label, output_file, random_seed=42, fig_width=23, fig_height=12,
+                       sample_size=-1, point_size=3):
     mean_data = pd.DataFrame()
-    dunn_pairs = generate_pairs(treatments)
-    dunn_p_values = {pair: [] for pair in dunn_pairs}
-    plt.figure(num=1, figsize=(fig_width, fig_height))
 
     for t in treatments:
         tdata = data[data[treatment_col] == t]
         wells = tdata['Well'].unique()
-        # if len(wells) > 3:
-        #     wells = np.random.choice(wells, 3)
-        for w in wells:
+        for w in range(len(wells)):
             if sample_size > 0:
-                sdata = tdata[tdata['Well'] == w].sample(n=sample_size, replace=False, random_state=random_seed)
+                sdata = tdata[tdata['Well'] == wells[w]].sample(n=sample_size, replace=False, random_state=random_seed)
             else:
-                sdata = tdata[tdata['Well'] == w]
-            smean = np.mean(sdata[variable_of_interest])
-            print(f'Treatment: {t} Well: {w} Mean: {smean}')
-            mean_data = pd.concat([mean_data,
-                                   pd.DataFrame(data=[[t, smean]],
-                                                columns=['TREATMENT', 'MEAN_FASCIN_RATIO'])])
+                sdata = tdata[tdata['Well'] == wells[w]]
+            sdata['Replicate'] = w
+            mean_data = pd.concat([mean_data, sdata])
 
-    # ax = plt.subplot(1, 1, 1)
-    sns.boxplot(x='TREATMENT', y='MEAN_FASCIN_RATIO', data=mean_data, order=plot_order, color='white',
-                showfliers=False, linecolor='black', linewidth=2)
-    sns.swarmplot(x='TREATMENT', y='MEAN_FASCIN_RATIO', data=mean_data, order=plot_order, palette=color_dict,
-                  hue='TREATMENT', size=18, alpha=0.8)
-    plt.ylabel(y_label)
+    ReplicateAverages = mean_data.groupby([treatment_col, 'Replicate'], as_index=False).agg(
+        {variable_of_interest: "mean"})
+    plt.figure(figsize=(1.2*fig_width, fig_height))
+    ax = plt.subplot(1, 1, 1)
+    sns.boxplot(x=treatment_col, y=variable_of_interest, data=ReplicateAverages, order=plot_order, color='white',
+                showfliers=False, linecolor='black', linewidth=2, zorder=1, boxprops=dict(facecolor='none'))
+    sns.swarmplot(x=treatment_col, y=variable_of_interest, hue="Replicate", data=mean_data, size=1.1*point_size,
+                  order=plot_order,
+                  zorder=0, palette={0: 'cornflowerblue', 1: 'gray', 2: 'orange'})
+    sns.swarmplot(x=treatment_col, y=variable_of_interest, hue="Replicate", size=25, edgecolor="k", linewidth=2,
+                  data=ReplicateAverages, order=plot_order, zorder=2,
+                  palette={0: 'cornflowerblue', 1: 'gray', 2: 'orange'})
+    plt.ylim(bottom=0.0, top=1.0)
     plt.xlabel('')
-    plt.ylim(bottom=0.42, top=0.60)
-    plt.title(f'Each dot represents the mean of {sample_size} cells')
+    plt.ylabel(y_label)
+    plt.title(f'{sample_size} cells per population')
+    ax.legend_.remove()
     plt.savefig(output_file, format='png', bbox_inches='tight')
     plt.show()
+    plt.close()
+
+    plt.figure(figsize=(fig_width, fig_height))
+    ax = plt.subplot(1, 1, 1)
+    sns.boxplot(x=treatment_col, y=variable_of_interest, data=ReplicateAverages, order=plot_order, color='white',
+                showfliers=False, linecolor='black', linewidth=2, zorder=1, boxprops=dict(facecolor='none'))
+    sns.swarmplot(x=treatment_col, y=variable_of_interest, hue="Replicate", data=mean_data, size=point_size,
+                  order=plot_order,
+                  zorder=0, palette={0: 'cornflowerblue', 1: 'gray', 2: 'orange'})
+    sns.swarmplot(x=treatment_col, y=variable_of_interest, hue="Replicate", size=25, edgecolor="k", linewidth=2,
+                  data=ReplicateAverages, order=plot_order, zorder=2,
+                  palette={0: 'cornflowerblue', 1: 'gray', 2: 'orange'})
+    plt.ylim(bottom=0.42, top=0.6)
+    plt.xlabel('')
+    plt.ylabel(y_label)
+    plt.title(f'{sample_size} cells per population')
+    ax.legend_.remove()
+    plt.savefig(output_file, format='png', bbox_inches='tight')
+    plt.show()
+    plt.close()
