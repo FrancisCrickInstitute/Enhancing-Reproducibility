@@ -5,3 +5,4 @@ scipy
 seaborn
 requests
 statsmodels
+scikit_posthocs
