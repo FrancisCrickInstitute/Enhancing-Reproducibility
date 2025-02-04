@@ -100,7 +100,7 @@ def map_wells_to_treatments(data, treatments, treatments_to_compounds, compounds
     return data
 
 
-def generate_swarmplot(plot_order, data, color_dict, treatment_col, variable_of_interest, y_label, output_file,
+def generate_swarmplot(plot_order, data, color_dict, treatment_col, variable_of_interest, y_label,
                        point_size=2, p_values=False, random_seed=42, fig_width=14, fig_height=10, plot_rows=1,
                        plot_cols=1, n_samples=1, sample_size=-1):
     """
@@ -207,8 +207,6 @@ def generate_swarmplot(plot_order, data, color_dict, treatment_col, variable_of_
                 # Annotate line with p-value
                 plt.text((x1 + x2) * .5, y + h, str_p_value, ha='center', va='bottom', color=col, fontsize=20)
 
-    plt.tight_layout()
-    plt.savefig(output_file, format='png', bbox_inches='tight')
     plt.show()
 
 
@@ -280,7 +278,7 @@ def plot_mean_v_sample_size(sample_sizes, num_iterations, data, treatment_col, v
 
 
 def plot_effect_size_v_sample_size(sample_sizes, num_iterations, data, treatment_col, variable_of_interest, y_label,
-                                   treatments, output_dir, filenames, initial_random_seed=42):
+                                   treatments, initial_random_seed=42):
     # Initialize dictionaries to store multiple mean values per sample size for each treatment
     mean_values = {treatment: [[] for _ in range(len(sample_sizes))] for treatment in data[treatment_col].unique()}
     random_seed = initial_random_seed
@@ -315,12 +313,11 @@ def plot_effect_size_v_sample_size(sample_sizes, num_iterations, data, treatment
         plt.ylabel(y_label)
         plt.legend(fontsize=20)
         plt.axhline(y=0.0, color='black', linestyle='dotted')
-        plt.savefig(os.path.join(output_dir, filenames[t]), format='png', bbox_inches='tight')
         plt.show()
 
 
 def plot_iqr_v_sample_size(sample_sizes, num_iterations, data, treatment_col, variable_of_interest, y_label,
-                           output_file, initial_random_seed=42):
+                           initial_random_seed=42):
     # Initialize dictionaries to store multiple mean values per sample size for each treatment
     mean_values = {treatment: [[] for _ in range(len(sample_sizes))] for treatment in data[treatment_col].unique()}
     random_seed = initial_random_seed
@@ -358,12 +355,11 @@ def plot_iqr_v_sample_size(sample_sizes, num_iterations, data, treatment_col, va
     plt.xlabel('Number of Cells')
     plt.ylabel(y_label)
     plt.legend(fontsize=20)
-    plt.savefig(output_file, format='png', bbox_inches='tight')
     plt.show()
 
 
-def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col, treatment, output_dir, filenames,
-                                      x_label, initial_random_seed=42):
+def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col, treatment, x_label,
+                                      initial_random_seed=42):
     total_samples = []
     max_samples = 500
     step = 10
@@ -429,7 +425,6 @@ def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col,
             plt.ylim(bottom=0, top=20)
             plt.xlim(left=0, right=1)
             plt.grid(True)
-            plt.savefig(os.path.join(output_dir, filenames[filecount]), format='png', bbox_inches='tight')
             plt.show()
             filecount = filecount + 1
 
@@ -458,7 +453,6 @@ def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col,
     lines, labels = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
     ax2.legend(lines + lines2, labels + labels2, loc='upper center', bbox_to_anchor=(0.5, 1.15), ncol=4)
-    plt.savefig(os.path.join(output_dir, filenames[0]), format='png', bbox_inches='tight')
     plt.show()
 
 
@@ -519,8 +513,7 @@ def plot_p_v_sample_size(sample_sizes, num_iterations, data, treatment_col, vari
 
 
 def generate_superplot(plot_order, treatments, data, color_dict, treatment_col, variable_of_interest,
-                       y_label, output_file, random_seed=42, fig_width=23, fig_height=12,
-                       sample_size=-1, point_size=3):
+                       y_label, random_seed=42, fig_width=23, fig_height=12, sample_size=-1, point_size=3):
     mean_data = pd.DataFrame()
 
     for t in treatments:
@@ -536,11 +529,11 @@ def generate_superplot(plot_order, treatments, data, color_dict, treatment_col, 
 
     ReplicateAverages = mean_data.groupby([treatment_col, 'Replicate'], as_index=False).agg(
         {variable_of_interest: "mean"})
-    plt.figure(figsize=(1.2*fig_width, fig_height))
+    plt.figure(figsize=(1.2 * fig_width, fig_height))
     ax = plt.subplot(1, 1, 1)
     sns.boxplot(x=treatment_col, y=variable_of_interest, data=ReplicateAverages, order=plot_order, color='white',
                 showfliers=False, linecolor='black', linewidth=2, zorder=1, boxprops=dict(facecolor='none'))
-    sns.swarmplot(x=treatment_col, y=variable_of_interest, hue="Replicate", data=mean_data, size=1.1*point_size,
+    sns.swarmplot(x=treatment_col, y=variable_of_interest, hue="Replicate", data=mean_data, size=1.1 * point_size,
                   order=plot_order,
                   zorder=0, palette={0: 'cornflowerblue', 1: 'gray', 2: 'orange'})
     sns.swarmplot(x=treatment_col, y=variable_of_interest, hue="Replicate", size=25, edgecolor="k", linewidth=2,
@@ -551,7 +544,6 @@ def generate_superplot(plot_order, treatments, data, color_dict, treatment_col, 
     plt.ylabel(y_label)
     plt.title(f'{sample_size} cells per population')
     ax.legend_.remove()
-    plt.savefig(output_file, format='png', bbox_inches='tight')
     plt.show()
     plt.close()
 
@@ -570,6 +562,5 @@ def generate_superplot(plot_order, treatments, data, color_dict, treatment_col, 
     plt.ylabel(y_label)
     plt.title(f'{sample_size} cells per population')
     ax.legend_.remove()
-    plt.savefig(output_file, format='png', bbox_inches='tight')
     plt.show()
     plt.close()
