@@ -131,10 +131,6 @@ def generate_swarmplot(plot_order, data, color_dict, treatment_col, variable_of_
             data[data[treatment_col] == 'SN0212398523'].sample(n=sample_size, replace=False, random_state=random_seed),
             data[data[treatment_col] == 'Leptomycin b'].sample(n=sample_size, replace=False, random_state=random_seed)
         ])
-
-        # Save sampled data if needed (optional)
-        for sample_index in range(n_samples):
-            sampled_data.to_csv(f'./outputs/data/sampled_data_{sample_size:03}_{sample_index:01}.csv', index=False)
     else:
         sampled_data = data
 
