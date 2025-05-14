@@ -6,3 +6,4 @@ seaborn
 requests
 statsmodels
 scikit_posthocs
+jupyter
