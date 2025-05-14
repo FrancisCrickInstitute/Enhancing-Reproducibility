@@ -56,7 +56,8 @@ def download_csv(file_path, url):
         print("File already exists.")
 
 
-def prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds, compounds, selected_wells):
+def prepare_data(nuc_data, cyto_data, image_data, image_indices, treatments, treatments_to_compounds, compounds,
+                 selected_wells):
     # Rename columns
     nuc_data = nuc_data.rename(columns=lambda x: 'Nuclear_' + x if 'Intensity' in x else x)
     cyto_data = cyto_data.rename(columns=lambda x: 'Cyto_' + x if 'Intensity' in x else x)
@@ -66,15 +67,22 @@ def prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_comp
     combined_data = combined_data.merge(image_data, on='ImageNumber', how='left')
 
     # Calculate ratios for Fascin and NuclearActin
-    for compartment in ['Fascin', 'NuclearActin']:
+    for compartment in ['YAPTAZ']:
         combined_data[f'{compartment}_Ratio'] = (
                 combined_data[f'Nuclear_Intensity_MeanIntensity_{compartment}'] /
                 (combined_data[f'Cyto_Intensity_MeanIntensity_{compartment}'] +
                  combined_data[f'Nuclear_Intensity_MeanIntensity_{compartment}'])
         )
 
-    # Extract well information and map treatments
-    combined_data['Well'] = combined_data['FileName_DNA'].str.extract(r'_(.*?)_')[0]
+    # Create a dictionary mapping 'sourcefilename' to 'WellName' from image_indices
+    filename_to_well = dict(zip(image_indices['sourcefilename'], image_indices['WellName']))
+
+    # Use the map function to create the 'Well' column in combined_data
+    combined_data['Well'] = combined_data['FileName_Hoechst'].map(filename_to_well)
+
+    # Apply the normalize_well_format function to the 'Well' column
+    combined_data['Well'] = combined_data['Well'].apply(normalize_well_format)
+
     combined_data = map_wells_to_treatments(combined_data, treatments, treatments_to_compounds, compounds)
 
     # Filter by selected wells if specified
@@ -126,10 +134,10 @@ def generate_swarmplot(plot_order, data, color_dict, treatment_col, variable_of_
     # Sample the data if sample_size > 0
     if sample_size > 0:
         sampled_data = pd.concat([
-            data[data[treatment_col] == 'Untreated'].sample(n=sample_size, replace=False, random_state=random_seed),
-            data[data[treatment_col] == 'DMSO'].sample(n=sample_size, replace=False, random_state=random_seed),
-            data[data[treatment_col] == 'SN0212398523'].sample(n=sample_size, replace=False, random_state=random_seed),
-            data[data[treatment_col] == 'Leptomycin b'].sample(n=sample_size, replace=False, random_state=random_seed)
+            data[data[treatment_col] == 'ARHGAP23'].sample(n=sample_size, replace=False, random_state=random_seed),
+            data[data[treatment_col] == 'Neg Control'].sample(n=sample_size, replace=False, random_state=random_seed),
+            data[data[treatment_col] == 'Tech Control'].sample(n=sample_size, replace=False, random_state=random_seed),
+            data[data[treatment_col] == 'LATS2'].sample(n=sample_size, replace=False, random_state=random_seed)
         ])
     else:
         sampled_data = data
