@@ -36,7 +36,7 @@ def normalize_well_format(well):
 def load_and_prepare_data(file_path, plate_number):
     df = (pd.read_csv(file_path).query('Plate == @plate_number').assign(
         **{
-            'Control Type': lambda x: x['Control Type'].fillna('Treated').replace('', 'Treated'),
+            'Gene Symbol': lambda x: x['Gene Symbol'].fillna('MOCK').replace('', 'MOCK'),
             'Well': lambda x: x['Well'].apply(normalize_well_format)
         }
     ))
@@ -84,6 +84,11 @@ def prepare_data(nuc_data, cyto_data, image_data, image_indices, treatments, tre
     combined_data['Well'] = combined_data['Well'].apply(normalize_well_format)
 
     combined_data = map_wells_to_treatments(combined_data, treatments, treatments_to_compounds, compounds)
+    #
+    # sample_data = combined_data[combined_data['YAPTAZ_Ratio'] > 0.65]
+    # sample_data = sample_data[sample_data['YAPTAZ_Ratio'] < 0.70]
+    #
+    # sample_data.to_csv('./sample_data.csv')
 
     # Filter by selected wells if specified
     if selected_wells:
@@ -94,7 +99,7 @@ def prepare_data(nuc_data, cyto_data, image_data, image_indices, treatments, tre
 
 def map_wells_to_treatments(data, treatments, treatments_to_compounds, compounds):
     # Map wells to treatment names and then to compound names
-    data['Treatment'] = data['Well'].map(treatments).map(treatments_to_compounds)
+    data['Treatment'] = data['Well'].map(treatments)
 
     # Handle cases where the treatment is 'Treated' differently
     treated_mask = data['Treatment'] == 'Treated'
@@ -134,10 +139,10 @@ def generate_swarmplot(plot_order, data, color_dict, treatment_col, variable_of_
     # Sample the data if sample_size > 0
     if sample_size > 0:
         sampled_data = pd.concat([
-            data[data[treatment_col] == 'ARHGAP23'].sample(n=sample_size, replace=False, random_state=random_seed),
-            data[data[treatment_col] == 'Neg Control'].sample(n=sample_size, replace=False, random_state=random_seed),
-            data[data[treatment_col] == 'Tech Control'].sample(n=sample_size, replace=False, random_state=random_seed),
-            data[data[treatment_col] == 'LATS2'].sample(n=sample_size, replace=False, random_state=random_seed)
+            data[data[treatment_col] == 'ARHGAP40'].sample(n=sample_size, replace=False, random_state=random_seed),
+            data[data[treatment_col] == 'YAP'].sample(n=sample_size, replace=False, random_state=random_seed),
+            data[data[treatment_col] == 'MOCK'].sample(n=sample_size, replace=False, random_state=random_seed),
+            data[data[treatment_col] == 'LATS1'].sample(n=sample_size, replace=False, random_state=random_seed)
         ])
     else:
         sampled_data = data
@@ -156,6 +161,7 @@ def generate_swarmplot(plot_order, data, color_dict, treatment_col, variable_of_
         # Calculate and plot the confidence intervals
         for treatment in plot_order:
             y_values = sampled_data[sampled_data[treatment_col] == treatment][variable_of_interest]
+            print(f'Treatment: {treatment}, Mean: {y_values.mean()}')
             lower, upper = ci(y_values, 0.95)
             x_pos = plot_order.index(treatment)
             ax.errorbar(x_pos, y_values.mean(), yerr=[[y_values.mean() - lower], [upper - y_values.mean()]],
