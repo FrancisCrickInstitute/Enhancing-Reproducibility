@@ -56,7 +56,7 @@ def download_csv(file_path, url):
         print("File already exists.")
 
 
-def prepare_data(nuc_data, cyto_data, image_data, image_indices, treatments, treatments_to_compounds, compounds,
+def prepare_data(nuc_data, cyto_data, image_data, image_indices, treatments, plate_number, qc, treatments_to_compounds, compounds,
                  selected_wells):
     # Rename columns
     nuc_data = nuc_data.rename(columns=lambda x: 'Nuclear_' + x if 'Intensity' in x else x)
@@ -89,6 +89,20 @@ def prepare_data(nuc_data, cyto_data, image_data, image_indices, treatments, tre
     # sample_data = sample_data[sample_data['YAPTAZ_Ratio'] < 0.70]
     #
     # sample_data.to_csv('./sample_data.csv')
+
+    # new_df = combined_data.groupby('Well', as_index=False).agg({
+    #     'YAPTAZ_Ratio': 'mean',
+    #     'Treatment': 'first'
+    # })
+    # new_df['QC'] = new_df['Well'].map(qc)
+    # new_df = new_df[new_df['QC'] == 'Pass']
+    #
+    # summary_df = new_df.groupby('Treatment').agg({
+    #     'YAPTAZ_Ratio': 'mean',  # Calculate the average 'YAPTAZ_Ratio'
+    #     'Well': 'count'  # Count the number of instances
+    # })
+    # new_df.to_csv(f'./../{plate_number}_instances.csv')
+    # summary_df.to_csv(f'./../{plate_number}_summary.csv')
 
     # Filter by selected wells if specified
     if selected_wells:
@@ -139,7 +153,7 @@ def generate_swarmplot(plot_order, data, color_dict, treatment_col, variable_of_
     # Sample the data if sample_size > 0
     if sample_size > 0:
         sampled_data = pd.concat([
-            data[data[treatment_col] == 'ARHGAP40'].sample(n=sample_size, replace=False, random_state=random_seed),
+            data[data[treatment_col] == 'ARAP2'].sample(n=sample_size, replace=False, random_state=random_seed),
             data[data[treatment_col] == 'YAP'].sample(n=sample_size, replace=False, random_state=random_seed),
             data[data[treatment_col] == 'MOCK'].sample(n=sample_size, replace=False, random_state=random_seed),
             data[data[treatment_col] == 'LATS1'].sample(n=sample_size, replace=False, random_state=random_seed)
@@ -161,7 +175,7 @@ def generate_swarmplot(plot_order, data, color_dict, treatment_col, variable_of_
         # Calculate and plot the confidence intervals
         for treatment in plot_order:
             y_values = sampled_data[sampled_data[treatment_col] == treatment][variable_of_interest]
-            print(f'Treatment: {treatment}, Mean: {y_values.mean()}')
+            # print(f'Treatment: {treatment}, Mean: {y_values.mean()}')
             lower, upper = ci(y_values, 0.95)
             x_pos = plot_order.index(treatment)
             ax.errorbar(x_pos, y_values.mean(), yerr=[[y_values.mean() - lower], [upper - y_values.mean()]],
@@ -298,7 +312,7 @@ def plot_effect_size_v_sample_size(sample_sizes, num_iterations, data, treatment
             for treatment in treatments:
                 subsample = data[data[treatment_col] == treatment].sample(n=sample_size, replace=False,
                                                                           random_state=random_seed)
-                control_subsample = data[data[treatment_col] == 'Untreated'].sample(n=sample_size, replace=False,
+                control_subsample = data[data[treatment_col] == 'MOCK'].sample(n=sample_size, replace=False,
                                                                                     random_state=random_seed)
                 mean = (subsample[variable_of_interest].mean() - control_subsample[variable_of_interest].mean()) / \
                        control_subsample[variable_of_interest].std()
@@ -432,8 +446,8 @@ def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col,
             plt.title(f'{len(total_samples)} {treatment} Cells')
             plt.xlabel(x_label)
             plt.ylabel('Frequency (%)')
-            plt.ylim(bottom=0, top=20)
-            plt.xlim(left=0, right=1)
+            plt.ylim(bottom=0, top=40)
+            plt.xlim(left=0.4, right=0.9)
             plt.grid(True)
             plt.show()
             filecount = filecount + 1
