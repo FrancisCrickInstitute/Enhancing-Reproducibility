@@ -36,7 +36,7 @@ def normalize_well_format(well):
 def load_and_prepare_data(file_path, plate_number):
     df = (pd.read_csv(file_path).query('Plate == @plate_number').assign(
         **{
-            'Control Type': lambda x: x['Control Type'].fillna('Treated').replace('', 'Treated'),
+            'Gene Symbol': lambda x: x['Gene Symbol'].fillna('MOCK').replace('', 'MOCK'),
             'Well': lambda x: x['Well'].apply(normalize_well_format)
         }
     ))
@@ -56,7 +56,8 @@ def download_csv(file_path, url):
         print("File already exists.")
 
 
-def prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_compounds, compounds, selected_wells):
+def prepare_data(nuc_data, cyto_data, image_data, image_indices, treatments, plate_number, qc, treatments_to_compounds, compounds,
+                 selected_wells):
     # Rename columns
     nuc_data = nuc_data.rename(columns=lambda x: 'Nuclear_' + x if 'Intensity' in x else x)
     cyto_data = cyto_data.rename(columns=lambda x: 'Cyto_' + x if 'Intensity' in x else x)
@@ -66,16 +67,42 @@ def prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_comp
     combined_data = combined_data.merge(image_data, on='ImageNumber', how='left')
 
     # Calculate ratios for Fascin and NuclearActin
-    for compartment in ['Fascin', 'NuclearActin']:
+    for compartment in ['YAPTAZ']:
         combined_data[f'{compartment}_Ratio'] = (
                 combined_data[f'Nuclear_Intensity_MeanIntensity_{compartment}'] /
                 (combined_data[f'Cyto_Intensity_MeanIntensity_{compartment}'] +
                  combined_data[f'Nuclear_Intensity_MeanIntensity_{compartment}'])
         )
 
-    # Extract well information and map treatments
-    combined_data['Well'] = combined_data['FileName_DNA'].str.extract(r'_(.*?)_')[0]
+    # Create a dictionary mapping 'sourcefilename' to 'WellName' from image_indices
+    filename_to_well = dict(zip(image_indices['sourcefilename'], image_indices['WellName']))
+
+    # Use the map function to create the 'Well' column in combined_data
+    combined_data['Well'] = combined_data['FileName_Hoechst'].map(filename_to_well)
+
+    # Apply the normalize_well_format function to the 'Well' column
+    combined_data['Well'] = combined_data['Well'].apply(normalize_well_format)
+
     combined_data = map_wells_to_treatments(combined_data, treatments, treatments_to_compounds, compounds)
+    #
+    # sample_data = combined_data[combined_data['YAPTAZ_Ratio'] > 0.65]
+    # sample_data = sample_data[sample_data['YAPTAZ_Ratio'] < 0.70]
+    #
+    # sample_data.to_csv('./sample_data.csv')
+
+    # new_df = combined_data.groupby('Well', as_index=False).agg({
+    #     'YAPTAZ_Ratio': 'mean',
+    #     'Treatment': 'first'
+    # })
+    # new_df['QC'] = new_df['Well'].map(qc)
+    # new_df = new_df[new_df['QC'] == 'Pass']
+    #
+    # summary_df = new_df.groupby('Treatment').agg({
+    #     'YAPTAZ_Ratio': 'mean',  # Calculate the average 'YAPTAZ_Ratio'
+    #     'Well': 'count'  # Count the number of instances
+    # })
+    # new_df.to_csv(f'./../{plate_number}_instances.csv')
+    # summary_df.to_csv(f'./../{plate_number}_summary.csv')
 
     # Filter by selected wells if specified
     if selected_wells:
@@ -86,7 +113,7 @@ def prepare_data(nuc_data, cyto_data, image_data, treatments, treatments_to_comp
 
 def map_wells_to_treatments(data, treatments, treatments_to_compounds, compounds):
     # Map wells to treatment names and then to compound names
-    data['Treatment'] = data['Well'].map(treatments).map(treatments_to_compounds)
+    data['Treatment'] = data['Well'].map(treatments)
 
     # Handle cases where the treatment is 'Treated' differently
     treated_mask = data['Treatment'] == 'Treated'
@@ -126,10 +153,10 @@ def generate_swarmplot(plot_order, data, color_dict, treatment_col, variable_of_
     # Sample the data if sample_size > 0
     if sample_size > 0:
         sampled_data = pd.concat([
-            data[data[treatment_col] == 'Untreated'].sample(n=sample_size, replace=False, random_state=random_seed),
-            data[data[treatment_col] == 'DMSO'].sample(n=sample_size, replace=False, random_state=random_seed),
-            data[data[treatment_col] == 'SN0212398523'].sample(n=sample_size, replace=False, random_state=random_seed),
-            data[data[treatment_col] == 'Leptomycin b'].sample(n=sample_size, replace=False, random_state=random_seed)
+            data[data[treatment_col] == 'ARAP2'].sample(n=sample_size, replace=False, random_state=random_seed),
+            data[data[treatment_col] == 'YAP'].sample(n=sample_size, replace=False, random_state=random_seed),
+            data[data[treatment_col] == 'MOCK'].sample(n=sample_size, replace=False, random_state=random_seed),
+            data[data[treatment_col] == 'LATS1'].sample(n=sample_size, replace=False, random_state=random_seed)
         ])
     else:
         sampled_data = data
@@ -287,7 +314,7 @@ def plot_effect_size_v_sample_size(sample_sizes, num_iterations, data, treatment
             for treatment in treatments:
                 subsample = data[data[treatment_col] == treatment].sample(n=sample_size, replace=False,
                                                                           random_state=random_seed)
-                control_subsample = data[data[treatment_col] == 'Untreated'].sample(n=sample_size, replace=False,
+                control_subsample = data[data[treatment_col] == 'MOCK'].sample(n=sample_size, replace=False,
                                                                                     random_state=random_seed)
                 mean = (subsample[variable_of_interest].mean() - control_subsample[variable_of_interest].mean()) / \
                        control_subsample[variable_of_interest].std()
@@ -427,6 +454,7 @@ def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col,
             plt.tight_layout()
             if filenames is not None:
                 plt.savefig(f'../plots/{filenames[filecount]}')
+
             plt.show()
             filecount = filecount + 1
 
