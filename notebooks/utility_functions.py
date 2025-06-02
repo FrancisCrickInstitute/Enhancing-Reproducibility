@@ -33,10 +33,10 @@ def normalize_well_format(well):
     return f"{match[1]}{int(match[2]):02d}" if match else well
 
 
-def load_and_prepare_data(file_path, plate_number):
+def load_and_prepare_data(file_path, plate_number, column, fill):
     df = (pd.read_csv(file_path).query('Plate == @plate_number').assign(
         **{
-            'Gene Symbol': lambda x: x['Gene Symbol'].fillna('MOCK').replace('', 'MOCK'),
+            column: lambda x: x[column].fillna(fill).replace('', fill),
             'Well': lambda x: x['Well'].apply(normalize_well_format)
         }
     ))
@@ -56,8 +56,8 @@ def download_csv(file_path, url):
         print("File already exists.")
 
 
-def prepare_data(nuc_data, cyto_data, image_data, image_indices, treatments, plate_number, qc, treatments_to_compounds, compounds,
-                 selected_wells):
+def prepare_data(nuc_data, cyto_data, image_data, image_indices, treatments, treatments_to_compounds,
+                 compounds, selected_wells, proteins_of_interest):
     # Rename columns
     nuc_data = nuc_data.rename(columns=lambda x: 'Nuclear_' + x if 'Intensity' in x else x)
     cyto_data = cyto_data.rename(columns=lambda x: 'Cyto_' + x if 'Intensity' in x else x)
@@ -67,42 +67,26 @@ def prepare_data(nuc_data, cyto_data, image_data, image_indices, treatments, pla
     combined_data = combined_data.merge(image_data, on='ImageNumber', how='left')
 
     # Calculate ratios for Fascin and NuclearActin
-    for compartment in ['YAPTAZ']:
+    for compartment in proteins_of_interest:
         combined_data[f'{compartment}_Ratio'] = (
                 combined_data[f'Nuclear_Intensity_MeanIntensity_{compartment}'] /
                 (combined_data[f'Cyto_Intensity_MeanIntensity_{compartment}'] +
                  combined_data[f'Nuclear_Intensity_MeanIntensity_{compartment}'])
         )
 
-    # Create a dictionary mapping 'sourcefilename' to 'WellName' from image_indices
-    filename_to_well = dict(zip(image_indices['sourcefilename'], image_indices['WellName']))
-
-    # Use the map function to create the 'Well' column in combined_data
-    combined_data['Well'] = combined_data['FileName_Hoechst'].map(filename_to_well)
+    if image_indices is not None:
+        # Create a dictionary mapping 'sourcefilename' to 'WellName' from image_indices
+        filename_to_well = dict(zip(image_indices['sourcefilename'], image_indices['WellName']))
+        # Use the map function to create the 'Well' column in combined_data
+        combined_data['Well'] = combined_data['FileName_Hoechst'].map(filename_to_well)
+    else:
+        # Extract well information and map treatments
+        combined_data['Well'] = combined_data['FileName_DNA'].str.extract(r'_(.*?)_')[0]
 
     # Apply the normalize_well_format function to the 'Well' column
     combined_data['Well'] = combined_data['Well'].apply(normalize_well_format)
 
     combined_data = map_wells_to_treatments(combined_data, treatments, treatments_to_compounds, compounds)
-    #
-    # sample_data = combined_data[combined_data['YAPTAZ_Ratio'] > 0.65]
-    # sample_data = sample_data[sample_data['YAPTAZ_Ratio'] < 0.70]
-    #
-    # sample_data.to_csv('./sample_data.csv')
-
-    # new_df = combined_data.groupby('Well', as_index=False).agg({
-    #     'YAPTAZ_Ratio': 'mean',
-    #     'Treatment': 'first'
-    # })
-    # new_df['QC'] = new_df['Well'].map(qc)
-    # new_df = new_df[new_df['QC'] == 'Pass']
-    #
-    # summary_df = new_df.groupby('Treatment').agg({
-    #     'YAPTAZ_Ratio': 'mean',  # Calculate the average 'YAPTAZ_Ratio'
-    #     'Well': 'count'  # Count the number of instances
-    # })
-    # new_df.to_csv(f'./../{plate_number}_instances.csv')
-    # summary_df.to_csv(f'./../{plate_number}_summary.csv')
 
     # Filter by selected wells if specified
     if selected_wells:
@@ -113,7 +97,10 @@ def prepare_data(nuc_data, cyto_data, image_data, image_indices, treatments, pla
 
 def map_wells_to_treatments(data, treatments, treatments_to_compounds, compounds):
     # Map wells to treatment names and then to compound names
-    data['Treatment'] = data['Well'].map(treatments)
+    if treatments_to_compounds:
+        data['Treatment'] = data['Well'].map(treatments).map(treatments_to_compounds)
+    else:
+        data['Treatment'] = data['Well'].map(treatments)
 
     # Handle cases where the treatment is 'Treated' differently
     treated_mask = data['Treatment'] == 'Treated'
@@ -152,12 +139,16 @@ def generate_swarmplot(plot_order, data, color_dict, treatment_col, variable_of_
 
     # Sample the data if sample_size > 0
     if sample_size > 0:
-        sampled_data = pd.concat([
-            data[data[treatment_col] == 'ARAP2'].sample(n=sample_size, replace=False, random_state=random_seed),
-            data[data[treatment_col] == 'YAP'].sample(n=sample_size, replace=False, random_state=random_seed),
-            data[data[treatment_col] == 'MOCK'].sample(n=sample_size, replace=False, random_state=random_seed),
-            data[data[treatment_col] == 'LATS1'].sample(n=sample_size, replace=False, random_state=random_seed)
-        ])
+        # Sample data for each treatment in plot_order and concatenate
+        # Ensure each treatment results in a DataFrame and concatenate
+        sampled_dataframes = [
+            data[data[treatment_col] == treatment].sample(n=sample_size, replace=False, random_state=random_seed)
+            for treatment in plot_order
+        ]
+        # Check if all elements are DataFrames and concatenate
+        assert all(
+            isinstance(df, pd.DataFrame) for df in sampled_dataframes), "One or more elements are not DataFrames."
+        sampled_data = pd.concat(sampled_dataframes)
     else:
         sampled_data = data
 
@@ -304,7 +295,7 @@ def plot_mean_v_sample_size(sample_sizes, num_iterations, data, treatment_col, v
 
 
 def plot_effect_size_v_sample_size(sample_sizes, num_iterations, data, treatment_col, variable_of_interest, y_label,
-                                   treatments, initial_random_seed=42):
+                                   treatments, control_name, initial_random_seed=42):
     # Initialize dictionaries to store multiple mean values per sample size for each treatment
     mean_values = {treatment: [[] for _ in range(len(sample_sizes))] for treatment in data[treatment_col].unique()}
     random_seed = initial_random_seed
@@ -314,8 +305,8 @@ def plot_effect_size_v_sample_size(sample_sizes, num_iterations, data, treatment
             for treatment in treatments:
                 subsample = data[data[treatment_col] == treatment].sample(n=sample_size, replace=False,
                                                                           random_state=random_seed)
-                control_subsample = data[data[treatment_col] == 'MOCK'].sample(n=sample_size, replace=False,
-                                                                                    random_state=random_seed)
+                control_subsample = data[data[treatment_col] == control_name].sample(n=sample_size, replace=False,
+                                                                               random_state=random_seed)
                 mean = (subsample[variable_of_interest].mean() - control_subsample[variable_of_interest].mean()) / \
                        control_subsample[variable_of_interest].std()
                 mean_values[treatment][sample_size_index].append(mean)
@@ -462,10 +453,11 @@ def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col,
         if remaining_samples <= new_samples_count:
             break
 
-    mean_values = [x - 0.4649 for x in mean_values]
-    median_values = [x - 0.5108 for x in median_values]
-    std_values = [x - 0.1306 for x in std_values]
-    iqr_values = [x - 0.1288 for x in iqr_values]
+    mean_values = [x - subsample[variable_of_interest].mean() for x in mean_values]
+    median_values = [x - subsample[variable_of_interest].median() for x in median_values]
+    std_values = [x - subsample[variable_of_interest].std() for x in std_values]
+    iqr_values = [x - (subsample[variable_of_interest].quantile(0.75) - subsample[variable_of_interest].quantile(0.25))
+                  for x in iqr_values]
     plt.figure(figsize=(14, 10))
     plt.scatter(sample_sizes, mean_values, label='_Mean', alpha=0.5, color='blue')
     plt.scatter(sample_sizes, median_values, label='_Median', alpha=0.5, color='orange')
