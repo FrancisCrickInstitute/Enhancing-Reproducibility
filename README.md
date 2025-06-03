@@ -16,11 +16,29 @@ To test our code on your own data, the easiest thing to do is download this repo
 
 A step-by-step guide is presented below. **You only need to perform steps 1 and 2 once.** Every subsequent time you want to run the code, skip straight to step 3.
 
-## Step 1: Install a Python Distribution
+## Step 1: Download the Contents of this Github Repo
+
+### Easy Way - Follow these steps if you are not familiar with Git
+
+Click on the small arrow on the green `Code` button above and then click `Download Zip`:
+
+![img.png](img.png)
+ 
+When the download completes, unzip the contents. You should now have a folder that looks like this:
+
+![img_1.png](img_1.png)
+
+Below, we will use the requirements file to set up a python environment to run the Jupyter notebooks contained in the `notebooks` folder.
+
+### Harder Way
+
+If you are already familiar with Git, you can obviously clone this repo like any other. However, some of the data in the `inputs` folder is quite large. As such, you will need to install [Git LFS](https://git-lfs.com/) to download the full dataset.
+
+## Step 2: Install a Python Distribution
 
 We recommend using conda as it's relatively straightforward and makes the management of different Python environments simple. You can install conda from [here](https://conda.io/projects/conda/en/latest/user-guide/install/index.html#regular-installation) (miniconda will suffice).
 
-## Step 2: Set Up Environment
+## Step 3: Set Up Environment
 
 Once conda is installed, open Anaconda Prompt and run the following series of commands:
 
@@ -40,7 +58,7 @@ conda deactivate
 ```
 You have successfully set up the necessary conda environment!
 
-## Step 3: Run The Code!
+## Step 4: Run The Code!
 
 The following commands will launch a Jupyter notebook allowing you to run the code on your own data:
 ```
