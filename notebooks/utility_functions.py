@@ -53,7 +53,7 @@ def normalize_well_format(well: str) -> str:
     return f"{match[1]}{int(match[2]):02d}" if match else well
 
 
-def load_and_prepare_data(file_path: str, plate_number: int, column: str, fill: str) -> pd.DataFrame:
+def load_and_prepare_data(file_path: str, plate_number, column: str, fill: str) -> pd.DataFrame:
     """
     Load a CSV file, filter by plate number, and prepare specified columns.
 
@@ -345,34 +345,55 @@ def plot_mean_v_sample_size(sample_sizes, num_iterations, data, treatment_col, v
 
 def plot_effect_size_v_sample_size(sample_sizes, num_iterations, data, treatment_col, variable_of_interest, y_label,
                                    treatments, control_name, initial_random_seed=42):
+    """
+    Plot the effect size of a variable of interest across different sample sizes for each treatment compared to a control.
+
+    Parameters:
+    - sample_sizes: List of sample sizes to iterate over.
+    - num_iterations: Number of iterations to perform for each sample size.
+    - data: DataFrame containing the data.
+    - treatment_col: Column name indicating the treatment type in the data.
+    - variable_of_interest: The variable for which the effect size is calculated and plotted.
+    - y_label: Label for the y-axis of the plot.
+    - treatments: List of treatments to analyze.
+    - control_name: Name of the control treatment.
+    - initial_random_seed: Initial random seed for reproducibility.
+    """
+
     # Initialize dictionaries to store multiple mean values per sample size for each treatment
-    mean_values = {treatment: [[] for _ in range(len(sample_sizes))] for treatment in data[treatment_col].unique()}
+    mean_values = {treatment: [[] for _ in range(len(sample_sizes))] for treatment in treatments}
     random_seed = initial_random_seed
+
+    # Iterate over each sample size and perform subsampling
     for sample_size_index, sample_size in enumerate(sample_sizes):
         for _ in range(num_iterations):
             combined_data = pd.DataFrame()
             for treatment in treatments:
+                # Subsample data for each treatment and control
                 subsample = data[data[treatment_col] == treatment].sample(n=sample_size, replace=False,
                                                                           random_state=random_seed)
                 control_subsample = data[data[treatment_col] == control_name].sample(n=sample_size, replace=False,
                                                                                      random_state=random_seed)
+
+                # Calculate the effect size as the difference in means divided by the control's standard deviation
                 mean = (subsample[variable_of_interest].mean() - control_subsample[variable_of_interest].mean()) / \
                        control_subsample[variable_of_interest].std()
                 mean_values[treatment][sample_size_index].append(mean)
                 combined_data = pd.concat([combined_data, subsample])
-                random_seed = random_seed + 1
+                random_seed += 1
 
-    # Calculate the mean, minimum, and maximum for the mean values
+    # Calculate the median, 25th percentile, and 75th percentile for the effect sizes
     median_values_mean = {treatment: np.nanmedian(mean_values[treatment], axis=1) for treatment in treatments}
     mean_values_25th = {treatment: np.nanpercentile(mean_values[treatment], 25, axis=1) for treatment in treatments}
     mean_values_75th = {treatment: np.nanpercentile(mean_values[treatment], 75, axis=1) for treatment in treatments}
 
-    # Plotting the mean Fascin_Ratio for each treatment with uncertainty ranges
-
+    # Plotting the effect sizes for each treatment with uncertainty ranges
     for t in range(len(treatments)):
         plt.figure(figsize=(15, 10))
         for treatment in treatments[:t + 1]:
+            # Plot the median effect size for each treatment
             plt.plot(sample_sizes, median_values_mean[treatment], label=treatment)
+            # Fill the area between the 25th and 75th percentiles to show uncertainty
             plt.fill_between(sample_sizes, mean_values_25th[treatment], mean_values_75th[treatment], alpha=0.2)
 
         plt.xlabel('Number of Cells')
@@ -384,34 +405,55 @@ def plot_effect_size_v_sample_size(sample_sizes, num_iterations, data, treatment
 
 def plot_iqr_v_sample_size(sample_sizes, num_iterations, data, treatment_col, variable_of_interest, y_label,
                            initial_random_seed=42, filename=None):
-    # Initialize dictionaries to store multiple mean values per sample size for each treatment
-    mean_values = {treatment: [[] for _ in range(len(sample_sizes))] for treatment in data[treatment_col].unique()}
+    """
+    Plot the interquartile range (IQR) of a variable of interest across different sample sizes for each treatment.
+
+    Parameters:
+    - sample_sizes: List of sample sizes to iterate over.
+    - num_iterations: Number of iterations to perform for each sample size.
+    - data: DataFrame containing the data.
+    - treatment_col: Column name indicating the treatment type in the data.
+    - variable_of_interest: The variable for which the IQR is calculated and plotted.
+    - y_label: Label for the y-axis of the plot.
+    - initial_random_seed: Initial random seed for reproducibility.
+    - filename: Filename to save the plot.
+    """
+
+    # Initialize dictionaries to store IQR values per sample size for each treatment
+    iqr_values = {treatment: [[] for _ in range(len(sample_sizes))] for treatment in data[treatment_col].unique()}
     random_seed = initial_random_seed
+
+    # Iterate over each sample size and perform subsampling
     for sample_size_index, sample_size in enumerate(sample_sizes):
         for _ in range(num_iterations):
             combined_data = pd.DataFrame()
             for treatment in data[treatment_col].unique():
+                # Subsample data for each treatment
                 subsample = data[data[treatment_col] == treatment].sample(n=sample_size, replace=False,
                                                                           random_state=random_seed)
+
+                # Calculate the interquartile range (IQR)
                 q1, q3 = np.percentile(subsample[variable_of_interest], [25, 75])
                 iqr = q3 - q1
-                mean_values[treatment][sample_size_index].append(iqr)
+                iqr_values[treatment][sample_size_index].append(iqr)
                 combined_data = pd.concat([combined_data, subsample])
-                random_seed = random_seed + 1
+                random_seed += 1
 
-    # Calculate the mean, minimum, and maximum for the mean values
-    iqr_values_min = {treatment: np.nanmin(mean_values[treatment], axis=1) for treatment in
-                      data[treatment_col].unique()}
-    iqr_values_max = {treatment: np.nanmax(mean_values[treatment], axis=1) for treatment in
-                      data[treatment_col].unique()}
+    # Calculate the minimum and maximum IQR values for each treatment
+    iqr_values_min = {treatment: np.nanmin(iqr_values[treatment], axis=1) for treatment in data[treatment_col].unique()}
+    iqr_values_max = {treatment: np.nanmax(iqr_values[treatment], axis=1) for treatment in data[treatment_col].unique()}
 
-    # Plotting
+    # Plotting the IQR differences for each treatment
     plt.figure(figsize=(14, 10))
     for treatment in data[treatment_col].unique():
+        # Calculate the difference between max and min IQR values
         diff_iqr = iqr_values_max[treatment] - iqr_values_min[treatment]
         plt.scatter(sample_sizes, diff_iqr, label=treatment, alpha=0.5)
+
+        # Initial guesses for fitting the decaying exponential function
         initial_guesses = [1, 0.01, np.median(diff_iqr)]
-        # Fit the decaying exponential function
+
+        # Fit the decaying exponential function to the IQR differences
         params, _ = curve_fit(exp_decay, sample_sizes, diff_iqr, p0=initial_guesses, maxfev=5000)
 
         # Generate the fitted curve
@@ -422,26 +464,47 @@ def plot_iqr_v_sample_size(sample_sizes, num_iterations, data, treatment_col, va
     plt.ylabel(y_label)
     plt.legend(fontsize=20)
     plt.tight_layout()
+
+    # Save the plot to a file if a filename is provided
     if filename is not None:
         plt.savefig(f'../plots/{filename}')
+
+    # Display the plot
     plt.show()
 
 
 def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col, treatment, x_label,
                                       initial_random_seed=42, filenames=None):
+    """
+    Generate cumulative histograms and plot statistical measures for a given treatment across different sample sizes.
+
+    Parameters:
+    - data: DataFrame containing the data.
+    - variable_of_interest: The variable for which the statistics are calculated and plotted.
+    - treatment_col: Column name indicating the treatment type in the data.
+    - treatment: Specific treatment to analyze.
+    - x_label: Label for the x-axis of the plot.
+    - initial_random_seed: Initial random seed for reproducibility.
+    - filenames: List of filenames to save the plots.
+    """
+
     total_samples = []
     max_samples = 500
     step = 10
     filecount = 0
     random_seed = initial_random_seed
+
+    # Filter data for the specific treatment
     subsample = data[data[treatment_col] == treatment]
 
+    # Initialize lists to store statistical measures
     median_values = []
     mean_values = []
     std_values = []
     iqr_values = []
     sample_sizes = []
 
+    # Iterate over sample sizes and calculate statistics
     for sample_size in range(step, max_samples + 1, step):
         # Determine the number of new samples to add
         new_samples_count = sample_size - len(total_samples)
@@ -452,15 +515,15 @@ def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col,
 
         # Sample additional data and add it to the total_samples list
         if new_samples_count > 0:
-            new_samples = subsample[~subsample.index.isin(total_samples)].sample(n=new_samples_count,
-                                                                                 replace=False,
-                                                                                 random_state=random_seed).index.tolist()
+            new_samples = subsample[~subsample.index.isin(total_samples)].sample(
+                n=new_samples_count, replace=False, random_state=random_seed).index.tolist()
             total_samples.extend(new_samples)
-            random_seed = random_seed + 1
+            random_seed += 1
 
         # Extract the data for the current total samples
         sample_data = subsample.loc[total_samples, variable_of_interest]
 
+        # Calculate statistics
         median = sample_data.median()
         mean = sample_data.mean()
         std = sample_data.std()
@@ -468,19 +531,21 @@ def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col,
         q3 = sample_data.quantile(0.75)
         iqr = q3 - q1
 
+        # Store statistics
         median_values.append(median)
         mean_values.append(mean)
         std_values.append(std)
         iqr_values.append(iqr)
         sample_sizes.append(sample_size)
 
+        # Plot histogram for specific sample sizes
         if sample_size in (20, 50, 100, 200, 300, 500):
-            # Plot histogram
             plt.figure(figsize=(14, 10))
             n, bins, patches = plt.hist(sample_data, bins=50, alpha=0.75, density=True)
             plt.axvline(x=median, color='r', linestyle='--', label='Median')
             plt.axvline(x=q1, color='g', linestyle='-', label='Q1')
             plt.axvline(x=q3, color='b', linestyle='-', label='Q3')
+
             # Calculate the density
             bin_maxes = np.maximum.reduceat(n, np.digitize([q1, q3], bins[:-1]) - 1)
             max_density = max(bin_maxes)
@@ -490,23 +555,26 @@ def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col,
             plt.ylabel('Frequency (%)')
             plt.ylim(bottom=0, top=20)
             plt.xlim(left=0, right=1)
-            # plt.grid(True)
             plt.tight_layout()
+
+            # Save the plot if filenames are provided
             if filenames is not None:
                 plt.savefig(f'../plots/{filenames[filecount]}')
-
             plt.show()
-            filecount = filecount + 1
+            filecount += 1
 
         # Break the loop if we have included all available samples
         if remaining_samples <= new_samples_count:
             break
 
+    # Calculate differences relative to the full dataset statistics
     mean_values = [x - subsample[variable_of_interest].mean() for x in mean_values]
     median_values = [x - subsample[variable_of_interest].median() for x in median_values]
     std_values = [x - subsample[variable_of_interest].std() for x in std_values]
     iqr_values = [x - (subsample[variable_of_interest].quantile(0.75) - subsample[variable_of_interest].quantile(0.25))
                   for x in iqr_values]
+
+    # Plot the differences in statistical measures
     plt.figure(figsize=(14, 10))
     plt.scatter(sample_sizes, mean_values, label='_Mean', alpha=0.5, color='blue')
     plt.scatter(sample_sizes, median_values, label='_Median', alpha=0.5, color='orange')
@@ -519,55 +587,93 @@ def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col,
     plt.scatter(sample_sizes, iqr_values, label='_IQR', alpha=0.5, color='purple')
     plt.plot(sample_sizes, std_values, label='Standard Deviation', color='gray')
     plt.plot(sample_sizes, iqr_values, label='IQR', color='purple')
+
     # Create a single legend
-    # plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15), ncol=4)
     plt.legend()
     plt.tight_layout()
+
+    # Save the plot if filenames are provided
     if filenames is not None:
         plt.savefig(f'../plots/{filenames[filecount]}')
     plt.show()
 
 
-# Assuming you have a dataframe 'df' loaded with the column 'your_column_name',
-# you would call the function like this:
-# plot_cumulative_histogram_samples(df, 'your_column_name')
-
-
 def generate_superplot(plot_order, treatments, data, treatment_col, variable_of_interest,
                        y_label, random_seed=42, fig_width=16, fig_height=8, sample_size=-1, point_size=3,
                        filename=None):
+    """
+    Generate a plot visualizing the distribution of a variable of interest across different treatments and replicates.
+
+    Parameters:
+    - plot_order: Order in which treatments are displayed on the x-axis.
+    - treatments: List of treatments to include in the plot.
+    - data: DataFrame containing the data.
+    - treatment_col: Column name indicating the treatment type in the data.
+    - variable_of_interest: The variable to be plotted.
+    - y_label: Label for the y-axis of the plot.
+    - random_seed: Random seed for reproducibility.
+    - fig_width, fig_height: Dimensions of the figure.
+    - sample_size: Number of samples to take per well (if > 0).
+    - point_size: Size of points in the swarm plot.
+    - filename: Filename to save the plot.
+    """
+
+    # Initialize an empty DataFrame to store mean data
     mean_data = pd.DataFrame()
 
+    # Iterate over each treatment and well to sample data
     for t in treatments:
+        # Filter data for the current treatment
         tdata = data[data[treatment_col] == t]
         wells = tdata['Well'].unique()
         for w in range(len(wells)):
+            # Sample data for each well if a sample size is specified
             if sample_size > 0:
                 sdata = tdata[tdata['Well'] == wells[w]].sample(n=sample_size, replace=False, random_state=random_seed)
             else:
                 sdata = tdata[tdata['Well'] == wells[w]]
+
+            # Add a replicate identifier
             sdata['Replicate'] = w
             mean_data = pd.concat([mean_data, sdata])
 
+    # Calculate the average for each replicate within each treatment
     ReplicateAverages = mean_data.groupby([treatment_col, 'Replicate'], as_index=False).agg(
         {variable_of_interest: "mean"})
+
+    # Generate the plot
     plt.figure(figsize=(fig_width, fig_height))
     ax = plt.subplot(1, 1, 1)
+
+    # Create a box plot for the replicate averages
     sns.boxplot(x=treatment_col, y=variable_of_interest, data=ReplicateAverages, order=plot_order, color='white',
                 showfliers=False, linecolor='black', linewidth=2, zorder=1, boxprops=dict(facecolor='none'))
+
+    # Create a swarm plot for the individual data points
     sns.swarmplot(x=treatment_col, y=variable_of_interest, hue="Replicate", data=mean_data, size=point_size,
-                  order=plot_order,
-                  zorder=0, palette={0: 'cornflowerblue', 1: 'gray', 2: 'orange'})
+                  order=plot_order, zorder=0, palette={0: 'cornflowerblue', 1: 'gray', 2: 'orange'})
+
+    # Create a swarm plot for the replicate averages with larger points
     sns.swarmplot(x=treatment_col, y=variable_of_interest, hue="Replicate", size=20, edgecolor="k", linewidth=2,
                   data=ReplicateAverages, order=plot_order, zorder=2,
                   palette={0: 'cornflowerblue', 1: 'gray', 2: 'orange'})
+
+    # Set plot limits and labels
     plt.ylim(bottom=0.0, top=1.0)
     plt.xlabel('')
     plt.ylabel(y_label)
     plt.title(f'{sample_size} cells per population')
+
+    # Remove the legend for clarity
     ax.legend_.remove()
+
+    # Adjust layout to prevent overlap
     plt.tight_layout()
+
+    # Save the plot to a file if a filename is provided
     if filename is not None:
         plt.savefig(f'../plots/{filename}')
+
+    # Display the plot
     plt.show()
     plt.close()
