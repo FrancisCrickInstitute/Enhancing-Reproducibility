@@ -1,6 +1,6 @@
 import itertools
 import re
-from typing import List, Any, Tuple
+from typing import List, Any, Tuple, Dict
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -80,44 +80,71 @@ def load_and_prepare_data(file_path: str, plate_number: int, column: str, fill: 
 
 def prepare_data(nuc_data, cyto_data, image_data, image_indices, treatments, treatments_to_compounds,
                  compounds, selected_wells, proteins_of_interest):
+    """
+    Prepare and merge data from nuclear, cytoplasmic, and image datasets, calculating ratios and mapping treatments.
+
+    Parameters:
+    nuc_data (pd.DataFrame): Nuclear data.
+    cyto_data (pd.DataFrame): Cytoplasmic data.
+    image_data (pd.DataFrame): Image data.
+    image_indices (pd.DataFrame): DataFrame containing image indices and well names.
+    treatments (Dict): Dictionary mapping well identifiers to treatment names.
+    treatments_to_compounds (Dict): Dictionary mapping treatment names to compound names.
+    compounds (Dict): Dictionary mapping well identifiers to compound names for treated cases.
+    selected_wells (List): List of wells to filter by.
+    proteins_of_interest (List): List of protein names for which ratios are calculated.
+
+    Returns:
+    pd.DataFrame: Combined and processed DataFrame.
+    """
     # Rename columns
     nuc_data = nuc_data.rename(columns=lambda x: 'Nuclear_' + x if 'Intensity' in x else x)
     cyto_data = cyto_data.rename(columns=lambda x: 'Cyto_' + x if 'Intensity' in x else x)
 
-    # Merge data on ImageNumber and ObjectNumber
+    # Merge data
     combined_data = nuc_data.merge(cyto_data, on=['ImageNumber', 'ObjectNumber'], how='left')
     combined_data = combined_data.merge(image_data, on='ImageNumber', how='left')
 
-    # Calculate ratios for Fascin and NuclearActin
+    # Calculate ratios
     for compartment in proteins_of_interest:
+        nuclear_intensity = f'Nuclear_Intensity_MeanIntensity_{compartment}'
+        cyto_intensity = f'Cyto_Intensity_MeanIntensity_{compartment}'
         combined_data[f'{compartment}_Ratio'] = (
-                combined_data[f'Nuclear_Intensity_MeanIntensity_{compartment}'] /
-                (combined_data[f'Cyto_Intensity_MeanIntensity_{compartment}'] +
-                 combined_data[f'Nuclear_Intensity_MeanIntensity_{compartment}'])
+                combined_data[nuclear_intensity] / (combined_data[cyto_intensity] + combined_data[nuclear_intensity])
         )
 
+    # Map well names
     if image_indices is not None:
-        # Create a dictionary mapping 'sourcefilename' to 'WellName' from image_indices
         filename_to_well = dict(zip(image_indices['sourcefilename'], image_indices['WellName']))
-        # Use the map function to create the 'Well' column in combined_data
         combined_data['Well'] = combined_data['FileName_Hoechst'].map(filename_to_well)
     else:
-        # Extract well information and map treatments
         combined_data['Well'] = combined_data['FileName_DNA'].str.extract(r'_(.*?)_')[0]
 
-    # Apply the normalize_well_format function to the 'Well' column
+    # Normalize well format and map treatments
     combined_data['Well'] = combined_data['Well'].apply(normalize_well_format)
-
     combined_data = map_wells_to_treatments(combined_data, treatments, treatments_to_compounds, compounds)
 
-    # Filter by selected wells if specified
+    # Filter by selected wells
     if selected_wells:
         combined_data = combined_data[combined_data['Well'].isin(selected_wells)]
 
     return combined_data.sort_values(by=['Treatment', 'Well'])
 
 
-def map_wells_to_treatments(data, treatments, treatments_to_compounds, compounds):
+def map_wells_to_treatments(data: pd.DataFrame, treatments: Dict, treatments_to_compounds: Dict,
+                            compounds: Dict) -> pd.DataFrame:
+    """
+    Map well identifiers to treatments and compounds, handling special cases and filling missing values.
+
+    Parameters:
+    data (pd.DataFrame): DataFrame containing well data.
+    treatments (Dict): Dictionary mapping well identifiers to treatment names.
+    treatments_to_compounds (Dict): Dictionary mapping treatment names to compound names.
+    compounds (Dict): Dictionary mapping well identifiers to compound names for treated cases.
+
+    Returns:
+    pd.DataFrame: DataFrame with an added 'Treatment' column, mapping wells to treatments or compounds.
+    """
     # Map wells to treatment names and then to compound names
     if treatments_to_compounds:
         data['Treatment'] = data['Well'].map(treatments).map(treatments_to_compounds)
