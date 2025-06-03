@@ -5,9 +5,9 @@ from typing import List, Any, Tuple, Dict
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import scikit_posthocs as sp
-import scipy.stats as stats
+import scikit_posthocs as sph
 import seaborn as sns
+from scipy import stats
 from scipy.optimize import curve_fit
 
 
@@ -164,86 +164,101 @@ def map_wells_to_treatments(data: pd.DataFrame, treatments: Dict, treatments_to_
 
 
 def generate_swarmplot(plot_order, data, color_dict, treatment_col, variable_of_interest, y_label,
-                       point_size=2, p_values=False, random_seed=42, fig_width=14, fig_height=10, plot_rows=1,
-                       plot_cols=1, n_samples=1, sample_size=-1, filename=None, title=None):
+                       point_size=2, p_values=False, random_seed=42, fig_width=14, fig_height=10,
+                       plot_rows=1, plot_cols=1, n_samples=1, sample_size=-1, filename=None, title=None):
     """
     Generates and saves swarm plots for the variable of interest across different treatments.
 
     Parameters:
-    - fig_width, fig_height: Dimensions of the figure.
-    - plot_rows, plot_cols: Number of rows and columns in the subplot grid.
     - plot_order: Order in which treatments are displayed on the x-axis.
-    - n_samples: Number of sample groups to plot.
-    - sample_size: Number of samples to take per treatment (if > 0).
     - data: DataFrame containing the data.
     - color_dict: Dictionary mapping treatments to colors for the plot.
     - treatment_col: Column name indicating the treatment type in the data.
     - variable_of_interest: The dependent variable to be plotted.
     - y_label: Label for the y-axis.
+    - point_size: Size of points in the swarm plot.
+    - p_values: Whether to calculate and display p-values.
+    - random_seed: Random seed for reproducibility.
+    - fig_width, fig_height: Dimensions of the figure.
+    - plot_rows, plot_cols: Number of rows and columns in the subplot grid.
+    - n_samples: Number of sample groups to plot.
+    - sample_size: Number of samples to take per treatment (if > 0).
+    - filename: Filename to save the plot.
+    - title: Title of the plot.
     """
 
+    # Initialize the plot with specified dimensions
     plt.figure(figsize=(fig_width, fig_height))
     dunn_pairs = generate_pairs(plot_order)
     dunn_p_values = {pair: [] for pair in dunn_pairs}
 
-    # Sample the data if sample_size > 0
+    # Sample the data if a sample size is specified
     if sample_size > 0:
-        # Sample data for each treatment in plot_order and concatenate
-        # Ensure each treatment results in a DataFrame and concatenate
-        sampled_dataframes = [
+        # Sample data for each treatment and concatenate into a single DataFrame
+        sampled_data = pd.concat([
             data[data[treatment_col] == treatment].sample(n=sample_size, replace=False, random_state=random_seed)
             for treatment in plot_order
-        ]
-        # Check if all elements are DataFrames and concatenate
-        assert all(
-            isinstance(df, pd.DataFrame) for df in sampled_dataframes), "One or more elements are not DataFrames."
-        sampled_data = pd.concat(sampled_dataframes)
+        ])
     else:
+        # Use the entire dataset if no sampling is required
         sampled_data = data
 
-    # Plot the data
+    # Generate plots for each sample
     for sample_index in range(n_samples):
         ax = plt.subplot(plot_rows, plot_cols, sample_index + 1)
-        sns.swarmplot(x=treatment_col, y=variable_of_interest, data=sampled_data, order=plot_order, palette=color_dict,
-                      hue=treatment_col, size=point_size, alpha=0.9, ax=ax, zorder=1)
-        sns.boxplot(x=treatment_col, y=variable_of_interest, data=sampled_data, order=plot_order,
-                    boxprops=dict(facecolor='none', zorder=2),
-                    whiskerprops=dict(color="black", linewidth=2, zorder=2),
-                    capprops=dict(color="black", linewidth=2, zorder=2),
-                    medianprops=dict(color="black", linewidth=2, zorder=2),
-                    showfliers=False, ax=ax)
+
+        # Create a swarm plot for the sampled data
+        sns.swarmplot(
+            x=treatment_col, y=variable_of_interest, data=sampled_data, order=plot_order,
+            palette=color_dict, hue=treatment_col, size=point_size, alpha=0.9, ax=ax, zorder=1
+        )
+
+        # Overlay a box plot on the swarm plot
+        sns.boxplot(
+            x=treatment_col, y=variable_of_interest, data=sampled_data, order=plot_order,
+            boxprops=dict(facecolor='none', zorder=2),
+            whiskerprops=dict(color="black", linewidth=2, zorder=2),
+            capprops=dict(color="black", linewidth=2, zorder=2),
+            medianprops=dict(color="black", linewidth=2, zorder=2),
+            showfliers=False, ax=ax
+        )
 
         ax.set_ylabel(y_label)
         ax.set_xlabel('')
-        if not p_values:
-            ax.set_ylim(bottom=0, top=1.0)
-        else:
-            _, p_value = stats.kruskal(
-                *(sampled_data[sampled_data[treatment_col] == t][variable_of_interest] for t in
-                  sampled_data[treatment_col].unique()))
 
-            dunn_result = sp.posthoc_dunn(sampled_data, val_col=variable_of_interest, group_col=treatment_col)
+        if p_values:
+            # Perform Kruskal-Wallis test to compare samples
+            _, p_value = stats.kruskal(*(
+                sampled_data[sampled_data[treatment_col] == t][variable_of_interest]
+                for t in sampled_data[treatment_col].unique()
+            ))
+
+            # Perform Dunn's test for post-hoc analysis
+            dunn_result = sph.posthoc_dunn(sampled_data, val_col=variable_of_interest, group_col=treatment_col)
             for pair in dunn_pairs:
                 dunn_p_values[pair].append(dunn_result.loc[pair[0], pair[1]])
 
-            y, h, col = sampled_data[variable_of_interest].max() + 0.005, 0.005, 'black'
-
+            # Prepare to annotate p-values on the plot
             ymax = []
             for t in range(len(sampled_data[treatment_col].unique()) - 1):
                 ymax.append(0)
 
             for pair in dunn_pairs:
                 x1, x2 = pair
+                # Find the x positions of the pair on the plot
                 x1 = [label.get_text() for label in ax.get_xticklabels()].index(x1)
                 x2 = [label.get_text() for label in ax.get_xticklabels()].index(x2)
 
+                # Determine the y position for the annotation
                 y = sampled_data[sampled_data[treatment_col].isin(pair)].loc[:, variable_of_interest].max() + 0.02
 
+                # Adjust y position to avoid overlap
                 for x in range(min(x1, x2), max(x1, x2)):
                     if y <= ymax[x] + 0.05:
                         y = ymax[x] + 0.05
                     ymax[x] = y
 
+                # Adjust x positions for better visualization
                 if x1 < x2:
                     x1 += 0.02
                     x2 -= 0.02
@@ -251,11 +266,11 @@ def generate_swarmplot(plot_order, data, color_dict, treatment_col, variable_of_
                     x1 -= 0.02
                     x2 += 0.02
 
-                # Draw line
-                plt.plot([x1, x1, x2, x2], [y, y + h, y + h, y], lw=1.5, c=col)
+                # Draw a line connecting the pair
+                plt.plot([x1, x1, x2, x2], [y, y + 0.005, y + 0.005, y], lw=1.5, c='black')
 
+                # Format the p-value string based on its significance
                 str_p_value = f'p = {dunn_p_values[pair][0]:.3f}'
-
                 if dunn_p_values[pair][0] < 0.0001:
                     str_p_value = '****'
                 elif dunn_p_values[pair][0] < 0.001:
@@ -265,30 +280,48 @@ def generate_swarmplot(plot_order, data, color_dict, treatment_col, variable_of_
                 elif dunn_p_values[pair][0] < 0.05:
                     str_p_value = '*'
 
-                # Annotate line with p-value
-                plt.text((x1 + x2) * .5, y + h, str_p_value, ha='center', va='bottom', color=col, fontsize=20)
+                # Annotate the plot with the p-value
+                plt.text((x1 + x2) * 0.5, y + 0.005, str_p_value, ha='center', va='bottom', color='black', fontsize=20)
 
     if title is not None:
         plt.title(title)
+
     plt.tight_layout()
+
     if filename is not None:
         plt.savefig(f'../plots/{filename}')
+
     plt.show()
 
 
 def plot_mean_v_sample_size(sample_sizes, num_iterations, data, treatment_col, variable_of_interest, y_label):
+    """
+    Plot the mean values of a variable of interest across different sample sizes for each treatment.
+
+    Parameters:
+    - sample_sizes: List of sample sizes to iterate over.
+    - num_iterations: Number of iterations to perform for each sample size.
+    - data: DataFrame containing the data.
+    - treatment_col: Column name indicating the treatment type in the data.
+    - variable_of_interest: The variable for which the mean is calculated and plotted.
+    - y_label: Label for the y-axis of the plot.
+    """
+
     # Initialize dictionaries to store multiple mean values per sample size for each treatment
     mean_values = {treatment: [[] for _ in range(len(sample_sizes))] for treatment in data[treatment_col].unique()}
+
+    # Iterate over each sample size and perform subsampling
     for sample_size_index, sample_size in enumerate(sample_sizes):
         for _ in range(num_iterations):
             combined_data = pd.DataFrame()
             for treatment in data[treatment_col].unique():
+                # Subsample data for each treatment and calculate the mean of the variable of interest
                 subsample = data[data[treatment_col] == treatment].sample(n=sample_size, replace=False)
                 mean = subsample[variable_of_interest].mean()
                 mean_values[treatment][sample_size_index].append(mean)
                 combined_data = pd.concat([combined_data, subsample])
 
-    # Calculate the mean, minimum, and maximum for the mean values
+    # Calculate the mean, 25th percentile, and 75th percentile for the mean values
     mean_values_mean = {treatment: np.nanmean(mean_values[treatment], axis=1) for treatment in
                         data[treatment_col].unique()}
     mean_values_25th = {treatment: np.nanpercentile(mean_values[treatment], 25, axis=1) for treatment in
@@ -296,10 +329,12 @@ def plot_mean_v_sample_size(sample_sizes, num_iterations, data, treatment_col, v
     mean_values_75th = {treatment: np.nanpercentile(mean_values[treatment], 75, axis=1) for treatment in
                         data[treatment_col].unique()}
 
-    # Plotting the mean Fascin_Ratio for each treatment with uncertainty ranges
+    # Plotting the mean values for each treatment with uncertainty ranges
     plt.figure(figsize=(14, 10))
     for treatment in data[treatment_col].unique():
+        # Plot the mean values for each treatment
         plt.plot(sample_sizes, mean_values_mean[treatment], label=treatment)
+        # Fill the area between the 25th and 75th percentiles to show uncertainty
         plt.fill_between(sample_sizes, mean_values_25th[treatment], mean_values_75th[treatment], alpha=0.2)
 
     plt.xlabel('Sample Size')
