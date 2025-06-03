@@ -1,59 +1,81 @@
 import itertools
-import os
 import re
+from typing import List, Any, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import requests
 import scikit_posthocs as sp
 import scipy.stats as stats
 import seaborn as sns
-import statsmodels.api as sm
 from scipy.optimize import curve_fit
 
 
-def generate_pairs(input_list):
-    # Generate all combinations of pairs
-    pairs = list(itertools.combinations(input_list, 2))
-    return pairs
+def generate_pairs(input_list: List[Any]) -> List[Tuple[Any, Any]]:
+    """Generate all possible unique pairs from the elements of the input list.
+
+    Parameters:
+    input_list (List[Any]): A list of elements from which pairs are to be generated.
+
+    Returns:
+    List[Tuple[Any, Any]]: A list of tuples, where each tuple is a unique pair of elements.
+    """
+    return list(itertools.combinations(input_list, 2))
 
 
-# Define the decaying exponential function
-def exp_decay(x, a, b, c):
+def exp_decay(x: float, a: float, b: float, c: float) -> float:
+    """
+    Compute the value of an exponential decay function f(x) = a * e^(-b * x) + c.
+
+    Parameters:
+    x (float): The point at which to evaluate the function.
+    a (float): Initial amplitude.
+    b (float): Decay rate.
+    c (float): Asymptotic value.
+
+    Returns:
+    float: The value of the exponential decay function at point x.
+    """
     return a * np.exp(-b * x) + c
 
 
-def ci(series, ci_level):
-    return sm.stats.DescrStatsW(series).tconfint_mean(alpha=1 - ci_level)
+def normalize_well_format(well: str) -> str:
+    """
+    Normalize a well identifier to a standard format with a letter followed by a two-digit number.
 
+    Parameters:
+    well (str): The well identifier to normalize (e.g., "A1" or "B24").
 
-def normalize_well_format(well):
+    Returns:
+    str: The normalized well identifier (e.g., "A01" or "B24"). Returns the original string if no match.
+    """
     match = re.match(r"([A-Za-z])([0-9]+)", well)
     return f"{match[1]}{int(match[2]):02d}" if match else well
 
 
-def load_and_prepare_data(file_path, plate_number, column, fill):
-    df = (pd.read_csv(file_path).query('Plate == @plate_number').assign(
-        **{
-            column: lambda x: x[column].fillna(fill).replace('', fill),
-            'Well': lambda x: x['Well'].apply(normalize_well_format)
-        }
-    ))
+def load_and_prepare_data(file_path: str, plate_number: int, column: str, fill: str) -> pd.DataFrame:
+    """
+    Load a CSV file, filter by plate number, and prepare specified columns.
+
+    This function reads a CSV file, filters rows by plate number, fills missing values
+    in a specified column, and normalizes well identifiers.
+
+    Parameters:
+    file_path (str): Path to the CSV file.
+    plate_number (int): Plate number to filter by.
+    column (str): Column name where missing values will be filled.
+    fill (str): Value to fill missing or empty entries in the specified column.
+
+    Returns:
+    pd.DataFrame: A DataFrame filtered by plate number with the specified transformations applied.
+    """
+    df = (pd.read_csv(file_path)
+          .query('Plate == @plate_number')
+          .assign(**{
+        column: lambda x: x[column].fillna(fill).replace('', fill),
+        'Well': lambda x: x['Well'].apply(normalize_well_format)
+    }))
     return df
-
-
-def download_csv(file_path, url):
-    if not os.path.exists(file_path):
-        response = requests.get(url)
-        if response.status_code == 200:
-            with open(file_path, 'wb') as file:
-                file.write(response.content)
-            print(f"File downloaded successfully: {file_path}")
-        else:
-            print(f"Failed to download the file. Status code: {response.status_code}")
-    else:
-        print("File already exists.")
 
 
 def prepare_data(nuc_data, cyto_data, image_data, image_indices, treatments, treatments_to_compounds,
@@ -227,41 +249,6 @@ def generate_swarmplot(plot_order, data, color_dict, treatment_col, variable_of_
     plt.show()
 
 
-def generate_table(data):
-    # Calculate descriptive statistics for each well
-    descriptive_stats = data.groupby('Well')['Fascin_Ratio'].describe(percentiles=[.25, .5, .75])
-
-    # Calculate 95% confidence interval
-    descriptive_stats['95% CI lower'] = descriptive_stats['mean'] - 1.96 * (
-            descriptive_stats['std'] / np.sqrt(descriptive_stats['count']))
-    descriptive_stats['95% CI upper'] = descriptive_stats['mean'] + 1.96 * (
-            descriptive_stats['std'] / np.sqrt(descriptive_stats['count']))
-
-    # Calculate inter-quartile range
-    descriptive_stats['IQR'] = descriptive_stats['75%'] - descriptive_stats['25%']
-
-    # Reset index to merge with treatment information
-    descriptive_stats.reset_index(inplace=True)
-
-    # Merge with treatment information
-    descriptive_stats = pd.merge(descriptive_stats, data[['Well', 'Treatment']].drop_duplicates(), on='Well',
-                                 how='left')
-
-    plt.figure(num=1, figsize=(28, 8))
-    ax = plt.subplot(1, 1, 1)
-
-    ax.axis('tight')  # turns off the axis lines and labels
-    ax.axis('off')  # changes x and y axis limits such that all data is shown
-
-    # plotting data
-    table = ax.table(cellText=descriptive_stats.values,
-                     colLabels=descriptive_stats.columns,
-                     loc="center")
-    table.set_fontsize(50)
-    # table.scale(1, 2)
-    plt.show()
-
-
 def plot_mean_v_sample_size(sample_sizes, num_iterations, data, treatment_col, variable_of_interest, y_label):
     # Initialize dictionaries to store multiple mean values per sample size for each treatment
     mean_values = {treatment: [[] for _ in range(len(sample_sizes))] for treatment in data[treatment_col].unique()}
@@ -306,7 +293,7 @@ def plot_effect_size_v_sample_size(sample_sizes, num_iterations, data, treatment
                 subsample = data[data[treatment_col] == treatment].sample(n=sample_size, replace=False,
                                                                           random_state=random_seed)
                 control_subsample = data[data[treatment_col] == control_name].sample(n=sample_size, replace=False,
-                                                                               random_state=random_seed)
+                                                                                     random_state=random_seed)
                 mean = (subsample[variable_of_interest].mean() - control_subsample[variable_of_interest].mean()) / \
                        control_subsample[variable_of_interest].std()
                 mean_values[treatment][sample_size_index].append(mean)
@@ -484,58 +471,7 @@ def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col,
 # plot_cumulative_histogram_samples(df, 'your_column_name')
 
 
-def plot_p_v_sample_size(sample_sizes, num_iterations, data, treatment_col, variable_of_interest, dunn_pairs,
-                         initial_random_seed=42):
-    # Modify the dictionary initialization to store multiple p-values per sample size
-    dunn_p_values = {pair: [[] for _ in range(len(sample_sizes))] for pair in dunn_pairs}
-    random_seed = initial_random_seed
-    for sample_size_index, sample_size in enumerate(sample_sizes):
-        for _ in range(num_iterations):
-            combined_data = pd.DataFrame()
-
-            for treatment in data[treatment_col].unique():
-                subsample = data[data[treatment_col] == treatment].sample(n=sample_size, replace=False,
-                                                                          random_state=random_seed)
-                combined_data = pd.concat([combined_data, subsample])
-                random_seed = random_seed + 1
-
-            # Perform Kruskal-Wallis test
-            _, p_value = stats.kruskal(
-                *(combined_data[combined_data[treatment_col] == t][variable_of_interest] for t in
-                  combined_data[treatment_col].unique()))
-
-            # Perform Dunn's test if Kruskal-Wallis test is significant
-            if p_value < 0.05:
-                dunn_result = sp.posthoc_dunn(combined_data, val_col=variable_of_interest, group_col=treatment_col)
-                for pair in dunn_pairs:
-                    dunn_p_values[pair][sample_size_index].append(dunn_result.loc[pair[0], pair[1]])
-
-            else:
-                for pair in dunn_pairs:
-                    dunn_p_values[pair][sample_size_index].append(np.nan)
-
-    # Calculate the minimum and maximum for the p-values
-    dunn_p_means = {pair: np.nanmean(dunn_p_values[pair], axis=1) for pair in dunn_pairs}
-    dunn_p_25th = {pair: np.nanpercentile(dunn_p_values[pair], 25, axis=1) for pair in dunn_pairs}
-    dunn_p_75th = {pair: np.nanpercentile(dunn_p_values[pair], 75, axis=1) for pair in dunn_pairs}
-
-    # Plotting the Dunn's test p-values with uncertainty ranges
-    plt.figure(figsize=(14, 10))
-    for pair in dunn_pairs:
-        mean_p_values = dunn_p_means[pair]
-        min_p_values = dunn_p_25th[pair]
-        max_p_values = dunn_p_75th[pair]
-        plt.plot(sample_sizes, mean_p_values, label=f'{pair[0]} vs {pair[1]}')
-        plt.fill_between(sample_sizes, min_p_values, max_p_values, alpha=0.2)
-
-    plt.xlabel('Sample Size')
-    plt.ylabel('Dunn Test P-Value')
-    plt.axhline(y=0.05, color='red', linestyle='dotted', label='p = 0.05')
-    plt.legend(fontsize=20)
-    plt.show()
-
-
-def generate_superplot(plot_order, treatments, data, color_dict, treatment_col, variable_of_interest,
+def generate_superplot(plot_order, treatments, data, treatment_col, variable_of_interest,
                        y_label, random_seed=42, fig_width=16, fig_height=8, sample_size=-1, point_size=3,
                        filename=None):
     mean_data = pd.DataFrame()
@@ -573,21 +509,3 @@ def generate_superplot(plot_order, treatments, data, color_dict, treatment_col, 
         plt.savefig(f'../plots/{filename}')
     plt.show()
     plt.close()
-
-    # plt.figure(figsize=(fig_width, fig_height))
-    # ax = plt.subplot(1, 1, 1)
-    # sns.boxplot(x=treatment_col, y=variable_of_interest, data=ReplicateAverages, order=plot_order, color='white',
-    #             showfliers=False, linecolor='black', linewidth=2, zorder=1, boxprops=dict(facecolor='none'))
-    # sns.swarmplot(x=treatment_col, y=variable_of_interest, hue="Replicate", data=mean_data, size=point_size,
-    #               order=plot_order,
-    #               zorder=0, palette={0: 'cornflowerblue', 1: 'gray', 2: 'orange'})
-    # sns.swarmplot(x=treatment_col, y=variable_of_interest, hue="Replicate", size=25, edgecolor="k", linewidth=2,
-    #               data=ReplicateAverages, order=plot_order, zorder=2,
-    #               palette={0: 'cornflowerblue', 1: 'gray', 2: 'orange'})
-    # plt.ylim(bottom=0.42, top=0.6)
-    # plt.xlabel('')
-    # plt.ylabel(y_label)
-    # plt.title(f'{sample_size} cells per population')
-    # ax.legend_.remove()
-    # plt.show()
-    # plt.close()
