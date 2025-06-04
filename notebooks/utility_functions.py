@@ -9,6 +9,7 @@ import scikit_posthocs as sph
 import seaborn as sns
 from scipy import stats
 from scipy.optimize import curve_fit
+from tqdm.notebook import tqdm
 
 
 def generate_pairs(input_list: List[Any]) -> List[Tuple[Any, Any]]:
@@ -294,55 +295,6 @@ def generate_swarmplot(plot_order, data, color_dict, treatment_col, variable_of_
     plt.show()
 
 
-def plot_mean_v_sample_size(sample_sizes, num_iterations, data, treatment_col, variable_of_interest, y_label):
-    """
-    Plot the mean values of a variable of interest across different sample sizes for each treatment.
-
-    Parameters:
-    - sample_sizes: List of sample sizes to iterate over.
-    - num_iterations: Number of iterations to perform for each sample size.
-    - data: DataFrame containing the data.
-    - treatment_col: Column name indicating the treatment type in the data.
-    - variable_of_interest: The variable for which the mean is calculated and plotted.
-    - y_label: Label for the y-axis of the plot.
-    """
-
-    # Initialize dictionaries to store multiple mean values per sample size for each treatment
-    mean_values = {treatment: [[] for _ in range(len(sample_sizes))] for treatment in data[treatment_col].unique()}
-
-    # Iterate over each sample size and perform subsampling
-    for sample_size_index, sample_size in enumerate(sample_sizes):
-        for _ in range(num_iterations):
-            combined_data = pd.DataFrame()
-            for treatment in data[treatment_col].unique():
-                # Subsample data for each treatment and calculate the mean of the variable of interest
-                subsample = data[data[treatment_col] == treatment].sample(n=sample_size, replace=False)
-                mean = subsample[variable_of_interest].mean()
-                mean_values[treatment][sample_size_index].append(mean)
-                combined_data = pd.concat([combined_data, subsample])
-
-    # Calculate the mean, 25th percentile, and 75th percentile for the mean values
-    mean_values_mean = {treatment: np.nanmean(mean_values[treatment], axis=1) for treatment in
-                        data[treatment_col].unique()}
-    mean_values_25th = {treatment: np.nanpercentile(mean_values[treatment], 25, axis=1) for treatment in
-                        data[treatment_col].unique()}
-    mean_values_75th = {treatment: np.nanpercentile(mean_values[treatment], 75, axis=1) for treatment in
-                        data[treatment_col].unique()}
-
-    # Plotting the mean values for each treatment with uncertainty ranges
-    plt.figure(figsize=(14, 10))
-    for treatment in data[treatment_col].unique():
-        # Plot the mean values for each treatment
-        plt.plot(sample_sizes, mean_values_mean[treatment], label=treatment)
-        # Fill the area between the 25th and 75th percentiles to show uncertainty
-        plt.fill_between(sample_sizes, mean_values_25th[treatment], mean_values_75th[treatment], alpha=0.2)
-
-    plt.xlabel('Sample Size')
-    plt.ylabel(y_label)
-    plt.legend(fontsize=20)
-    plt.show()
-
-
 def plot_effect_size_v_sample_size(sample_sizes, num_iterations, data, treatment_col, variable_of_interest, y_label,
                                    treatments, control_name, initial_random_seed=42):
     """
@@ -364,23 +316,28 @@ def plot_effect_size_v_sample_size(sample_sizes, num_iterations, data, treatment
     mean_values = {treatment: [[] for _ in range(len(sample_sizes))] for treatment in treatments}
     random_seed = initial_random_seed
 
-    # Iterate over each sample size and perform subsampling
-    for sample_size_index, sample_size in enumerate(sample_sizes):
-        for _ in range(num_iterations):
-            combined_data = pd.DataFrame()
-            for treatment in treatments:
-                # Subsample data for each treatment and control
-                subsample = data[data[treatment_col] == treatment].sample(n=sample_size, replace=False,
-                                                                          random_state=random_seed)
-                control_subsample = data[data[treatment_col] == control_name].sample(n=sample_size, replace=False,
-                                                                                     random_state=random_seed)
+    # Use tqdm.notebook.tqdm to show progress over all iterations
+    total_iterations = len(sample_sizes) * num_iterations
+    with tqdm(total=total_iterations, desc="Processing") as pbar:
+        for sample_size_index, sample_size in enumerate(sample_sizes):
+            for _ in range(num_iterations):
+                combined_data = pd.DataFrame()
+                for treatment in treatments:
+                    # Subsample data for each treatment and control
+                    subsample = data[data[treatment_col] == treatment].sample(n=sample_size, replace=False,
+                                                                              random_state=random_seed)
+                    control_subsample = data[data[treatment_col] == control_name].sample(n=sample_size, replace=False,
+                                                                                         random_state=random_seed)
 
-                # Calculate the effect size as the difference in means divided by the control's standard deviation
-                mean = (subsample[variable_of_interest].mean() - control_subsample[variable_of_interest].mean()) / \
-                       control_subsample[variable_of_interest].std()
-                mean_values[treatment][sample_size_index].append(mean)
-                combined_data = pd.concat([combined_data, subsample])
-                random_seed += 1
+                    # Calculate the effect size as the difference in means divided by the control's standard deviation
+                    mean = (subsample[variable_of_interest].mean() - control_subsample[variable_of_interest].mean()) / \
+                           control_subsample[variable_of_interest].std()
+                    mean_values[treatment][sample_size_index].append(mean)
+                    combined_data = pd.concat([combined_data, subsample])
+                    random_seed += 1
+
+                # Update the progress bar
+                pbar.update(1)
 
     # Calculate the median, 25th percentile, and 75th percentile for the effect sizes
     median_values_mean = {treatment: np.nanmedian(mean_values[treatment], axis=1) for treatment in treatments}
@@ -423,21 +380,25 @@ def plot_iqr_v_sample_size(sample_sizes, num_iterations, data, treatment_col, va
     iqr_values = {treatment: [[] for _ in range(len(sample_sizes))] for treatment in data[treatment_col].unique()}
     random_seed = initial_random_seed
 
-    # Iterate over each sample size and perform subsampling
-    for sample_size_index, sample_size in enumerate(sample_sizes):
-        for _ in range(num_iterations):
-            combined_data = pd.DataFrame()
-            for treatment in data[treatment_col].unique():
-                # Subsample data for each treatment
-                subsample = data[data[treatment_col] == treatment].sample(n=sample_size, replace=False,
-                                                                          random_state=random_seed)
+    # Use tqdm to show progress over all iterations
+    total_iterations = len(sample_sizes) * num_iterations
+    with tqdm(total=total_iterations, desc="Processing") as pbar:
+        for sample_size_index, sample_size in enumerate(sample_sizes):
+            for _ in range(num_iterations):
+                combined_data = pd.DataFrame()
+                for treatment in data[treatment_col].unique():
+                    # Subsample data for each treatment
+                    subsample = data[data[treatment_col] == treatment].sample(n=sample_size, replace=False,
+                                                                              random_state=random_seed)
 
-                # Calculate the interquartile range (IQR)
-                q1, q3 = np.percentile(subsample[variable_of_interest], [25, 75])
-                iqr = q3 - q1
-                iqr_values[treatment][sample_size_index].append(iqr)
-                combined_data = pd.concat([combined_data, subsample])
+                    # Calculate the interquartile range (IQR)
+                    q1, q3 = np.percentile(subsample[variable_of_interest], [25, 75])
+                    iqr = q3 - q1
+                    iqr_values[treatment][sample_size_index].append(iqr)
+                    combined_data = pd.concat([combined_data, subsample])
+
                 random_seed += 1
+                pbar.update(1)  # Update the progress bar
 
     # Calculate the minimum and maximum IQR values for each treatment
     iqr_values_min = {treatment: np.nanmin(iqr_values[treatment], axis=1) for treatment in data[treatment_col].unique()}
