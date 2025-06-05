@@ -8,7 +8,11 @@ This repository contains the Python code associated with the following paper:
 
 # Get Started
 
-The quickest and easiest way to try this code is to [try it on Binder](https://mybinder.org/v2/gh/djpbarry/Enhancing-Reproducibility/main?urlpath=%2Fdoc%2Ftree%2Fnotebooks%2Fcompanion_notebook.ipynb). This will allow you to reproduce the plots in the associated publication.
+The quickest and easiest way to try this code is to [try it on Binder](https://mybinder.org/v2/gh/djpbarry/Enhancing-Reproducibility/main?urlpath=%2Fdoc%2Ftree%2Fnotebooks%2Fcompanion_notebook.ipynb). This will allow you to reproduce the plots in the associated publication. On some occasions, you may find Binder produces the following error:
+
+![image](https://github.com/user-attachments/assets/10963bd7-7670-42c8-a0df-7bf52c1ab2a7)
+
+Should this occur, simply close the tab and relaunch binder from the link above.
 
 # Run On Your Own Data
 
