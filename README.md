@@ -38,7 +38,11 @@ If you are already familiar with Git, you can obviously clone this repo like any
 
 We recommend using conda as it's relatively straightforward and makes the management of different Python environments simple. You can install conda from [here](https://conda.io/projects/conda/en/latest/user-guide/install/index.html#regular-installation) (miniconda will suffice).
 
-## Step 3: Set Up Environment
+## Step 3: Organise Your Data
+
+The [notebooks](./notebooks) in this repository will only work if your own data is stuctured in the same way as the [inputs](./inputs) in this repository. This assumes that the raw data has originated from the [Image Data Resource](https://idr.openmicroscopy.org/) and has a suitable annotations file associated with ([like this one](inputs/idr/idr0028-screenB-annotation.csv), for example). It is also assumed that the analysis of this raw data has been performed with [CellProfiler](https://cellprofiler.org/) using a pipeline similar to [Nuclear_Localisation.cppipe](Nuclear_Localisation.cppipe). It is certainly possible to adapt the notebooks to analyse data from other sources, but a reasonable knowledge of Python coding would be required to achieve this.
+
+## Step 4: Set Up Environment
 
 Once conda is installed, open Anaconda Prompt and run the following series of commands:
 
@@ -58,7 +62,7 @@ conda deactivate
 ```
 You have successfully set up the necessary conda environment!
 
-## Step 4: Run The Code!
+## Step 5: Run The Code!
 
 The following commands will launch a Jupyter notebook allowing you to run the code on your own data:
 ```
