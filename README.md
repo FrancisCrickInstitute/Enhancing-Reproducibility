@@ -1,6 +1,6 @@
 # Overview
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/FrancisCrickInstitute/Enhancing-Reproducibility/main?urlpath=%2Fdoc%2Ftree%2Fnotebooks%2Fcompanion_notebook.ipynb) [![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/release/python-3130/) ![Commit activity](https://img.shields.io/github/commit-activity/y/FrancisCrickInstitute/Enhancing-Reproducibility?style=plastic) ![GitHub](https://img.shields.io/github/license/FrancisCrickInstitute/Enhancing-Reproducibility?color=green&style=plastic)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/FrancisCrickInstitute/Enhancing-Reproducibility/main?urlpath=%2Fdoc%2Ftree%2Fnotebooks%2Fcompanion_notebook.ipynb) [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/) ![Commit activity](https://img.shields.io/github/commit-activity/y/FrancisCrickInstitute/Enhancing-Reproducibility?style=plastic) ![GitHub](https://img.shields.io/github/license/FrancisCrickInstitute/Enhancing-Reproducibility?color=green&style=plastic)
 
 This repository contains the Python code associated with the following paper:
 
