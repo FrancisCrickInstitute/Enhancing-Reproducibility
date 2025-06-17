@@ -1,6 +1,6 @@
 # Overview
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/djpbarry/Enhancing-Reproducibility/main?urlpath=%2Fdoc%2Ftree%2Fnotebooks%2Fcompanion_notebook.ipynb) [![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/release/python-3130/) ![Commit activity](https://img.shields.io/github/commit-activity/y/djpbarry/Enhancing-Reproducibility?style=plastic) ![GitHub](https://img.shields.io/github/license/djpbarry/Enhancing-Reproducibility?color=green&style=plastic)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/FrancisCrickInstitute/Enhancing-Reproducibility/main?urlpath=%2Fdoc%2Ftree%2Fnotebooks%2Fcompanion_notebook.ipynb) [![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/release/python-3130/) ![Commit activity](https://img.shields.io/github/commit-activity/y/FrancisCrickInstitute/Enhancing-Reproducibility?style=plastic) ![GitHub](https://img.shields.io/github/license/FrancisCrickInstitute/Enhancing-Reproducibility?color=green&style=plastic)
 
 This repository contains the Python code associated with the following paper:
 
@@ -8,7 +8,7 @@ This repository contains the Python code associated with the following paper:
 
 # Get Started
 
-The quickest and easiest way to try this code is to [try it on Binder](https://mybinder.org/v2/gh/djpbarry/Enhancing-Reproducibility/main?urlpath=%2Fdoc%2Ftree%2Fnotebooks%2Fcompanion_notebook.ipynb). This will allow you to reproduce the plots in the associated publication. On some occasions, you may find Binder produces the following error:
+The quickest and easiest way to try this code is to [try it on Binder](https://mybinder.org/v2/gh/FrancisCrickInstitute/Enhancing-Reproducibility/main?urlpath=%2Fdoc%2Ftree%2Fnotebooks%2Fcompanion_notebook.ipynb). This will allow you to reproduce the plots in the associated publication. On some occasions, you may find Binder produces the following error:
 
 ![image](https://github.com/user-attachments/assets/10963bd7-7670-42c8-a0df-7bf52c1ab2a7)
 
