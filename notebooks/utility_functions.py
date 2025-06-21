@@ -559,7 +559,7 @@ def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col,
     plt.show()
 
 
-def generate_superplot(plot_order, treatments, data, treatment_col, variable_of_interest,
+def generate_superplot(plot_order, treatments, data, treatment_col, replicate_col, variable_of_interest,
                        y_label, random_seed=42, fig_width=16, fig_height=8, sample_size=-1, point_size=3,
                        filename=None):
     """
@@ -581,25 +581,26 @@ def generate_superplot(plot_order, treatments, data, treatment_col, variable_of_
 
     # Initialize an empty DataFrame to store mean data
     mean_data = pd.DataFrame()
+    replicate_index = 'Replicate_Index'
 
     # Iterate over each treatment and well to sample data
     for t in treatments:
         # Filter data for the current treatment
         tdata = data[data[treatment_col] == t]
-        wells = tdata['Well'].unique()
-        for w in range(len(wells)):
+        replicates = tdata[replicate_col].unique()
+        for w in range(len(replicates)):
             # Sample data for each well if a sample size is specified
             if sample_size > 0:
-                sdata = tdata[tdata['Well'] == wells[w]].sample(n=sample_size, replace=False, random_state=random_seed)
+                sdata = tdata[tdata[replicate_col] == replicates[w]].sample(n=sample_size, replace=False, random_state=random_seed)
             else:
-                sdata = tdata[tdata['Well'] == wells[w]]
+                sdata = tdata[tdata[replicate_col] == replicates[w]]
 
             # Add a replicate identifier
-            sdata['Replicate'] = w
+            sdata[replicate_index] = w
             mean_data = pd.concat([mean_data, sdata])
 
     # Calculate the average for each replicate within each treatment
-    ReplicateAverages = mean_data.groupby([treatment_col, 'Replicate'], as_index=False).agg(
+    ReplicateAverages = mean_data.groupby([treatment_col, replicate_index], as_index=False).agg(
         {variable_of_interest: "mean"})
 
     # Generate the plot
@@ -611,11 +612,11 @@ def generate_superplot(plot_order, treatments, data, treatment_col, variable_of_
                 showfliers=False, linecolor='black', linewidth=2, zorder=1, boxprops=dict(facecolor='none'))
 
     # Create a swarm plot for the individual data points
-    sns.swarmplot(x=treatment_col, y=variable_of_interest, hue="Replicate", data=mean_data, size=point_size,
+    sns.swarmplot(x=treatment_col, y=variable_of_interest, hue=replicate_index, data=mean_data, size=point_size,
                   order=plot_order, zorder=0, palette={0: 'cornflowerblue', 1: 'gray', 2: 'orange'})
 
     # Create a swarm plot for the replicate averages with larger points
-    sns.swarmplot(x=treatment_col, y=variable_of_interest, hue="Replicate", size=20, edgecolor="k", linewidth=2,
+    sns.swarmplot(x=treatment_col, y=variable_of_interest, hue=replicate_index, size=20, edgecolor="k", linewidth=2,
                   data=ReplicateAverages, order=plot_order, zorder=2,
                   palette={0: 'cornflowerblue', 1: 'gray', 2: 'orange'})
 
@@ -637,4 +638,3 @@ def generate_superplot(plot_order, treatments, data, treatment_col, variable_of_
 
     # Display the plot
     plt.show()
-    plt.close()
