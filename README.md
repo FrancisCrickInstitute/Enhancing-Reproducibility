@@ -1,14 +1,14 @@
 # Overview
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/FrancisCrickInstitute/Enhancing-Reproducibility/main?urlpath=%2Fdoc%2Ftree%2Fnotebooks%2Fcompanion_notebook.ipynb) [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/) ![Commit activity](https://img.shields.io/github/commit-activity/y/FrancisCrickInstitute/Enhancing-Reproducibility?style=plastic) ![GitHub](https://img.shields.io/github/license/FrancisCrickInstitute/Enhancing-Reproducibility?color=green&style=plastic)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/FrancisCrickInstitute/Enhancing-Reproducibility/main?urlpath=%2Fdoc%2Ftree%2Fnotebooks%2Fcompanion_framework_notebook.ipynb) [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/) ![Commit activity](https://img.shields.io/github/commit-activity/y/FrancisCrickInstitute/Enhancing-Reproducibility?style=plastic) ![GitHub](https://img.shields.io/github/license/FrancisCrickInstitute/Enhancing-Reproducibility?color=green&style=plastic)
 
 This repository contains the Python code associated with the following paper:
 
-- Barry DJ, Marcotti S, Gerontogianni L and Kelly G (2025). Enhancing Reproducibility Through Bioimage Analysis: The Significance of Effect Sizes and Controls.
+- Barry DJ, Marcotti S, Gerontogianni L and Kelly G (2025). A Statistical Framework for Robust and Reproducible BioImage Analysis. https://doi.org/10.1101/2025.02.10.637409 
 
 # Get Started
 
-The quickest and easiest way to try this code is to [try it on Binder](https://mybinder.org/v2/gh/FrancisCrickInstitute/Enhancing-Reproducibility/main?urlpath=%2Fdoc%2Ftree%2Fnotebooks%2Fcompanion_notebook.ipynb). This will allow you to reproduce the plots in the associated publication. On some occasions, you may find Binder produces the following error:
+The quickest and easiest way to try this code is to [try it on Binder](https://mybinder.org/v2/gh/FrancisCrickInstitute/Enhancing-Reproducibility/main?urlpath=%2Fdoc%2Ftree%2Fnotebooks%2Fcompanion_framework_notebook.ipynb). This will allow you to reproduce the plots in the associated publication. On some occasions, you may find Binder produces the following error:
 
 ![image](https://github.com/user-attachments/assets/10963bd7-7670-42c8-a0df-7bf52c1ab2a7)
 
@@ -16,9 +16,11 @@ Should this occur, simply close the tab and relaunch binder from the link above.
 
 # Run On Your Own Data
 
-To test our code on your own data, the easiest thing to do is download this repo and run the [Nuclear_Fascin.cppipe](Nuclear_Fascin.cppipe) [CellProfiler](https://cellprofiler.org/) pipeline on your own images and replace the files in [the cell_profiler_outputs](inputs/cell_profiler_outputs) folder. You can then use the [Jupyter Notebook](notebooks/companion_notebook.ipynb) to generate plots for your own images.
+You can modify the [Jupyter notebooks](./notebooks) to run on your own data. In order to do this, you will need to produce some data to analyse - for this you have two options:
+1. Download this repo and run the [Nuclear_Localisation](Nuclear_Localisation.cppipe) [CellProfiler](https://cellprofiler.org/) pipeline on your own images and replace the files in [the cell_profiler_outputs](inputs/cell_profiler_outputs) folder. You can then use the Jupyter Notebooks ``companion_notebook_idr0028.ipynb`` or ``companion_notebook_idr0139.ipynb`` to generate plots for your own images. Both these notebooks produce similar outputs, but they have been configured to handle slightly different input data formats, specific to the requirements of the IDR0028 and IDR0139 datasets.
+2. You can analyse your images using _any_ software that outputs the results of the analysis in a CSV file. Then, download this repo and use the CSV file as input for the ``companion_framework_notebook.ipynb`` notebook.
 
-A step-by-step guide is presented below. **You only need to perform steps 1 and 2 once.** Every subsequent time you want to run the code, skip straight to step 3.
+A step-by-step guide to downloading the repo and running the notebooks is presented below. **You only need to perform steps 1 and 2 once.** Every subsequent time you want to run the code, skip straight to step 3.
 
 ## Step 1: Download the Contents of this Github Repo
 
