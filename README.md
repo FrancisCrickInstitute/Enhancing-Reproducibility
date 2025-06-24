@@ -4,7 +4,7 @@
 
 This repository contains the Python code associated with the following paper:
 
-- Barry DJ, Marcotti S, Gerontogianni L and Kelly G (2025). Enhancing Reproducibility Through Bioimage Analysis: The Significance of Effect Sizes and Controls.
+- Barry DJ, Marcotti S, Gerontogianni L and Kelly G (2025). A Statistical Framework for Robust and Reproducible BioImage Analysis. https://doi.org/10.1101/2025.02.10.637409 
 
 # Get Started
 
