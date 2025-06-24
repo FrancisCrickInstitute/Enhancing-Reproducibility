@@ -16,13 +16,17 @@ Should this occur, simply close the tab and relaunch binder from the link above.
 
 # Run On Your Own Data
 
-You can modify the [Jupyter notebooks](./notebooks) to run on your own data. In order to do this, you will need to produce some data to analyse - for this you have two options:
-1. Download this repo and run the [Nuclear_Localisation](Nuclear_Localisation.cppipe) [CellProfiler](https://cellprofiler.org/) pipeline on your own images and replace the files in [the cell_profiler_outputs](inputs/cell_profiler_outputs) folder. You can then use the Jupyter Notebooks ``companion_notebook_idr0028.ipynb`` or ``companion_notebook_idr0139.ipynb`` to generate plots for your own images. Both these notebooks produce similar outputs, but they have been configured to handle slightly different input data formats, specific to the requirements of the IDR0028 and IDR0139 datasets.
-2. You can analyse your images using _any_ software that outputs the results of the analysis in a CSV file. Then, download this repo and use the CSV file as input for the ``companion_framework_notebook.ipynb`` notebook.
+You can modify the [Jupyter notebooks](./notebooks) to run on your own data. In order to do this, you will need to produce some data to analyse - for this you have two options.
 
-A step-by-step guide to downloading the repo and running the notebooks is presented below. **You only need to perform steps 1 and 2 once.** Every subsequent time you want to run the code, skip straight to step 3.
+### Option 1
+Download this repo and run the [Nuclear_Localisation](Nuclear_Localisation.cppipe) [CellProfiler](https://cellprofiler.org/) pipeline on your own images and replace the files in [the cell_profiler_outputs](inputs/cell_profiler_outputs) folder. You can then use the Jupyter Notebooks ``companion_notebook_idr0028.ipynb`` or ``companion_notebook_idr0139.ipynb`` to generate plots for your own images. Both these notebooks produce similar outputs, but they have been configured to handle slightly different input data formats, specific to the requirements of the IDR0028 and IDR0139 datasets.
+
+### Option 2
+You can analyse your images using _any_ software that outputs the results of the analysis in a CSV file. Then, download this repo and use the CSV file as input for the ``companion_framework_notebook.ipynb`` notebook.
 
 ## Step 1: Download the Contents of this Github Repo
+
+A step-by-step guide to downloading the repo and running the notebooks is presented below. **You only need to perform steps 1 and 2 once.** Every subsequent time you want to run the code, skip straight to step 3.
 
 ### Easy Way - Follow these steps if you are not familiar with Git
 
@@ -46,7 +50,15 @@ We recommend using conda as it's relatively straightforward and makes the manage
 
 ## Step 3: Organise Your Data
 
-The [notebooks](./notebooks) in this repository will only work if your own data is stuctured in the same way as the [inputs](./inputs) in this repository. This assumes that the raw data has originated from the [Image Data Resource](https://idr.openmicroscopy.org/) and has a suitable annotations file associated with ([like this one](inputs/idr/idr0028-screenB-annotation.csv), for example). It is also assumed that the analysis of this raw data has been performed with [CellProfiler](https://cellprofiler.org/) using a pipeline similar to [Nuclear_Localisation.cppipe](Nuclear_Localisation.cppipe). It is certainly possible to adapt the notebooks to analyse data from other sources, but a reasonable knowledge of Python coding would be required to achieve this.
+### Option 1
+
+The [notebooks](./notebooks) in this repository will only work if your own data is stuctured appopriately. If you wish to run the [Nuclear_Localisation](Nuclear_Localisation.cppipe) [CellProfiler](https://cellprofiler.org/) pipeline on your own images, the outputs must be structured in the same way as the [inputs](./inputs) in this repository. This assumes that the raw data has originated from the [Image Data Resource](https://idr.openmicroscopy.org/) and has a suitable annotations file associated with ([like this one](inputs/idr/idr0028-screenB-annotation.csv), for example). Your data can then be analysed using either ``companion_notebook_idr0028.ipynb`` or ``companion_notebook_idr0139.ipynb``. It is certainly possible to adapt the notebooks to analyse data from other sources, but a reasonable knowledge of Python coding would be required to achieve this.
+
+### Option 2
+
+Alternatively, you can analyse your images using _any_ software that outputs the results of the analysis in a CSV file. Then, download this repo and use the CSV file as input for the ``companion_framework_notebook.ipynb`` notebook. Ensure that your CSV file contains data in the `tidy format` described by [Pylvänäinen et al (2025)](https://doi.org/10.1242/jcs.263801):
+
+![Tidy Data Format](./assets/tidy_format.png)
 
 ## Step 4: Set Up Environment
 
