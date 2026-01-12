@@ -204,6 +204,10 @@ def generate_swarmplot(plot_order, data, color_dict, treatment_col, variable_of_
         # Use the entire dataset if no sampling is required
         sampled_data = data
 
+    # Calculate the average for each replicate within each treatment
+    ReplicateAverages = sampled_data.groupby(treatment_col, as_index=False).agg(
+        {variable_of_interest: "mean"})
+
     # Generate plots for each sample
     for sample_index in range(n_samples):
         ax = plt.subplot(plot_rows, plot_cols, sample_index + 1)
@@ -213,6 +217,10 @@ def generate_swarmplot(plot_order, data, color_dict, treatment_col, variable_of_
             x=treatment_col, y=variable_of_interest, data=sampled_data, order=plot_order,
             palette=color_dict, hue=treatment_col, size=point_size, alpha=0.9, ax=ax, zorder=1
         )
+
+        sns.swarmplot(x=treatment_col, y=variable_of_interest, hue=treatment_col, size=20, edgecolor="k", linewidth=2,
+                      data=ReplicateAverages, order=plot_order, zorder=3,
+                      palette=color_dict)
 
         # Overlay a box plot on the swarm plot
         sns.boxplot(
@@ -504,8 +512,9 @@ def plot_cumulative_histogram_samples(data, variable_of_interest, treatment_col,
             plt.figure(figsize=(14, 10))
             n, bins, patches = plt.hist(sample_data, bins=50, alpha=0.75, density=True)
             plt.axvline(x=median, color='r', linestyle='--', label='Median')
-            plt.axvline(x=q1, color='g', linestyle='-', label='Q1')
-            plt.axvline(x=q3, color='b', linestyle='-', label='Q3')
+            plt.axvline(x=mean, color='black', linestyle='--', label='Mean')
+            plt.axvline(x=q1, color='g', linestyle='--', label='Q1')
+            plt.axvline(x=q3, color='b', linestyle='--', label='Q3')
 
             # Calculate the density
             bin_maxes = np.maximum.reduceat(n, np.digitize([q1, q3], bins[:-1]) - 1)
