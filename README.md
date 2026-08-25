@@ -4,7 +4,7 @@
 
 This repository contains the Python code associated with the following paper:
 
-- Barry DJ, Marcotti S, Gerontogianni L and Kelly G (2025). A Statistical Framework for Robust and Reproducible BioImage Analysis. https://doi.org/10.1101/2025.02.10.637409 
+- Stefania Marcotti, Lina Gerontogianni, Gavin Kelly, David J. Barry; Practical statistics for bioimage analysis – a guide to experimental design and data interpretation. _J Cell Sci_ 15 May 2026; 139 (10): jcs264367. doi: https://doi.org/10.1242/jcs.264367
 
 # Get Started
 
